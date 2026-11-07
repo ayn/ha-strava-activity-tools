@@ -132,6 +132,12 @@ muting and generic gear assignment have importable blueprints today. A complete
 is planned; currently those services need an explicitly configured native automation. Existing users of the earlier
 `activity_tools` prototype should follow [the migration guide](docs/MIGRATION.md).
 
+Using an HA MCP agent? Ask it to follow the
+[agent-assisted setup guide](https://github.com/ayn/ha-strava-activity-tools/blob/main/docs/AGENT_SETUP.md).
+It covers prerequisite checks, multiple accounts, preview-first rules, the native
+history dashboard, verification and rollback. Repository coding agents should
+also read [AGENTS.md](AGENTS.md); HA MCP does not load that file automatically.
+
 Do not enable this enrichment alongside another writer doing the same job until
 a dry run confirms the intended handoff. Existing cloud workers and rules need
 not be removed for local development.
