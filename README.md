@@ -64,10 +64,45 @@ heuristic, not a determination of workout role. Review class title wording and
 existing rules before migration. Do not mute every Peloton `Workout`: that also
 includes strength and other sessions.
 
+## Connectivity before installation
+
+`ha_strava` needs a configured external HA URL. Strava’s servers must be able to
+reach its `/api/strava/webhook` callback for validation and activity notifications.
+The provider registers that callback; this companion reuses its events and OAuth
+session. Marketplace/HACS installation and blueprint imports do not configure
+network access or Strava authorization for you.
+
+Use a publicly reachable HTTPS hostname through one of these options:
+
+- **Home Assistant Link** (formerly Home Assistant Cloud/Nabu Casa remote access),
+  with remote access enabled.
+- A public tunnel or reverse proxy, such as Cloudflare Tunnel or Tailscale Funnel.
+- Port forwarding with a public connection, DNS/dynamic DNS and TLS.
+
+Ordinary Tailscale/Serve or another private VPN is insufficient: Strava cannot
+join your private network. Funnel exposes a public URL. The callback must accept
+Strava’s validation GET and event POST without an interactive login or browser
+challenge in front of it. A proxy’s interactive access policy cannot block this
+path. A dynamic DNS name alone does not make a callback reachable through CGNAT.
+
+Set the Internet URL in **Settings → System → Network → Home Assistant URL**,
+or select the cloud URL where available. The **OAuth authorization callback
+domain** in the Strava API app is separately set to `my.home-assistant.io`, as
+required by `ha_strava`; do not confuse it with the webhook hostname.
+
+See [HA remote access](https://www.home-assistant.io/docs/configuration/remote/),
+[Strava webhooks](https://developers.strava.com/docs/webhooks/),
+[Home Assistant Link](https://contributors.home-assistant.io/architecture/platform/cloud/),
+and [Tailscale Funnel](https://tailscale.com/docs/features/tailscale-funnel).
+
 ## Installation and prerequisites
 
 - HA **2026.10.4**, the tested baseline; Python 3.14 for development.
-- A configured, loaded `ha_strava` account.
+- A configured, loaded `ha_strava` account with a reachable callback as described above.
+- Strava app Client ID/Secret for the provider’s OAuth setup. Strava currently
+  requires a subscription to create a personal API app; see its
+  [getting-started guide](https://developers.strava.com/docs/getting-started/).
+  No second Strava app, login or webhook is needed for this companion.
 - The activity-created event from upstream [PR #349](https://github.com/craibo/ha_strava/pull/349),
   or a version containing that feature. This dependency is not yet assumed merged.
 - Existing Strava OAuth consent with `activity:write` for actual writes;
@@ -91,7 +126,10 @@ numeric athlete ID. Never copy an OAuth refresh token into this integration.
 Use an **Import** link in the blueprint table, or copy desired files from
 `blueprints/automation/` to `blueprints/automation/strava_activity_tools/`.
 Create an automation from the Blueprints page and start in preview mode.
-Blueprint imports are separate from integration installation. Existing users of the earlier
+Blueprint imports are separate from integration installation. AQI/UV,
+muting and generic gear assignment have importable blueprints today. A complete
+[workout-tag/track-shoe blueprint](https://github.com/ayn/ha-strava-activity-tools/issues/11)
+is planned; currently those services need an explicitly configured native automation. Existing users of the earlier
 `activity_tools` prototype should follow [the migration guide](docs/MIGRATION.md).
 
 Do not enable this enrichment alongside another writer doing the same job until
