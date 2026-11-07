@@ -108,7 +108,7 @@
     },
     "list_jobs": {
       "name": "List jobs",
-      "description": "Inspect this account\u2019s durable jobs, retry times, and safe error categories. No Strava request is made.",
+      "description": "Inspect this account’s durable jobs, retry times, and safe error categories. No Strava request is made.",
       "fields": {
         "config_entry_id": {
           "name": "Strava Activity Tools account"
@@ -170,6 +170,50 @@
     "error": {
       "shoe_catalog_unavailable": "Could not load your Strava shoes. Existing choices are kept; retry when the Strava account is available.",
       "invalid_shoes": "Choose an active shoe from this Strava account."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "latest_preview": {
+        "name": "Latest preview",
+        "state": {
+          "updated": "Updated",
+          "unchanged": "No changes needed",
+          "would_update": "Would update",
+          "suggested": "Change suggested",
+          "abstained": "No confident suggestion",
+          "delivered": "Activity received",
+          "skipped_ineligible": "Skipped: activity not eligible",
+          "queued": "Waiting to retry",
+          "failed": "Needs attention",
+          "matches": "Rule matched",
+          "no_match": "Rule did not match",
+          "track": "Track detected",
+          "not_track": "Track not confirmed",
+          "unknown": "Unknown result",
+          "no_activity": "Nothing recorded yet"
+        }
+      },
+      "latest_run": {
+        "name": "Latest run",
+        "state": {
+          "updated": "Updated",
+          "unchanged": "No changes needed",
+          "would_update": "Would update",
+          "suggested": "Change suggested",
+          "abstained": "No confident suggestion",
+          "delivered": "Activity received",
+          "skipped_ineligible": "Skipped: activity not eligible",
+          "queued": "Waiting to retry",
+          "failed": "Needs attention",
+          "matches": "Rule matched",
+          "no_match": "Rule did not match",
+          "track": "Track detected",
+          "not_track": "Track not confirmed",
+          "unknown": "Unknown result",
+          "no_activity": "Nothing recorded yet"
+        }
+      }
     }
   }
 }

@@ -30,7 +30,9 @@ async def configured(hass):
     )
     entry.add_to_hass(hass)
     await async_setup(hass, {})
-    await async_setup_entry(hass, entry)
+    hass.config.components.add(DOMAIN)
+    async with entry.setup_lock:
+        await async_setup_entry(hass, entry)
     activity = {
         "id": 9,
         "athlete": {"id": 42},

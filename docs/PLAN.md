@@ -22,6 +22,8 @@ Current capabilities:
 - Durable environment jobs, bounded retries, completed receipts and manual replay.
 - Read-only interval/calendar matching and GPS track/shoe suggestions, with
   expected-state checks for explicitly configured native write automations.
+- In the next release: native preview/run sensors and a standard Markdown history
+  card, with bounded per-account persistence and background retry outcomes.
 
 ## Planned work
 
@@ -45,7 +47,7 @@ proof of API access or measured user demand.
 | Issue | User benefit |
 | --- | --- |
 | [#9: Guide onboarding and diagnose source permissions without manual IDs](https://github.com/ayn/ha-strava-activity-tools/issues/9) | Verified account selection, permission checks and helpful repair paths. |
-| [#10: Expose processing health, previews and repair through native HA controls](https://github.com/ayn/ha-strava-activity-tools/issues/10) | Understand matching decisions, inspect health and retry selected work. |
+| [#10: Expose processing health, previews and repair through native HA controls](https://github.com/ayn/ha-strava-activity-tools/issues/10) | Preview/history sensors and a native card are implemented for the next release; health/repair controls remain planned. |
 | [#11: Share Workout-tag and track-shoe automation blueprints](https://github.com/ayn/ha-strava-activity-tools/issues/11) | Import a complete guarded Workout-tag/track-shoe automation. |
 | [#12: Add rule exclusions, richer filters and metric-friendly units](https://github.com/ayn/ha-strava-activity-tools/issues/12) | Use km/miles and preserve exceptions such as short races. |
 | [#13: Add shoe/bike pickers and reusable gear-assignment presets](https://github.com/ayn/ha-strava-activity-tools/issues/13) | Choose shoes/bikes by name and share assignment presets. |

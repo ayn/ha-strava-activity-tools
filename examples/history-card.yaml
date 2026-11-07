@@ -1,0 +1,49 @@
+type: markdown
+title: Strava previews and run history
+content: |-
+  {% set found = namespace(value=false) %}
+  {% set labels = {'hide_from_home': 'Hide from feed', 'gear_id': 'Gear',
+      'workout_type': 'Workout type', 'description': 'Description', 'name': 'Title',
+      'trainer': 'Indoor', 'commute': 'Commute', 'sport_type': 'Sport'} %}
+  {% for entity in integration_entities('strava_activity_tools') | sort %}
+  {% if state_attr(entity, 'stream') in ['previews', 'runs'] %}
+  {% set found.value = true %}
+  ### {{ state_attr(entity, 'friendly_name') | e }}
+  {% for row in (state_attr(entity, 'recent') or []) %}
+  **[Activity {{ row.activity_id }}](https://www.strava.com/activities/{{ row.activity_id }}) · {{ row.status | replace('_', ' ') | capitalize }}**
+
+  {{ as_local(as_datetime(row.timestamp)).strftime('%b %d, %H:%M') }} · {{ row.operation | replace('_', ' ') }}
+  {% for field, value in row.get('changes', {}).items() %}
+  - {{ labels.get(field, field) }}: {{ value }}
+  {% endfor %}
+  {% if row.get('aqi') is not none %}
+  - AQI: {{ row.aqi }} · UV: {{ row.get('uv', 'unavailable') }}
+  {% endif %}
+  {% if row.get('is_workout') is not none %}
+  - Workout: {{ 'yes' if row.is_workout else 'no' }} · Track: {{ 'yes' if row.get('on_track') else 'not confirmed' }}
+  {% endif %}
+  {% if row.get('reason') %}
+  - Reason: {{ row.reason | replace('_', ' ') }}
+  {% endif %}
+  {% if row.get('track_shoes') %}
+  - Track shoes: {{ row.track_shoes.status | replace('_', ' ') }}{% if row.track_shoes.get('reason') %} ({{ row.track_shoes.reason | replace('_', ' ') }}){% endif %}
+  {% for field, value in row.track_shoes.get('changes', {}).items() %}
+  - {{ labels.get(field, field) }}: {{ value }}
+  {% endfor %}
+  {% endif %}
+  {% if row.get('error') %}
+  - Error: {{ row.error | replace('_', ' ') }}
+  {% endif %}
+  {% if row.status == 'queued' and row.get('next_retry') %}
+  - Retry after {{ row.next_retry | timestamp_custom('%b %d, %H:%M') }} · attempt {{ row.get('attempt', 0) }}
+  {% endif %}
+
+  ---
+  {% else %}
+  Nothing recorded yet. Run a preview or wait for a new activity.
+  {% endfor %}
+  {% endif %}
+  {% endfor %}
+  {% if not found.value %}
+  No history entities found. Install a release with preview/history support and load the integration.
+  {% endif %}

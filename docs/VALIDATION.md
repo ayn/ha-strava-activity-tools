@@ -51,3 +51,21 @@ A correctly labeled track workout completes the native workflow without changes.
 Broader positive classification writes and fresh API-derived annotations after
 upload still need live coverage. Native muting/tag/shoe consumers are separate
 from the durable fetch/environment queue.
+
+## Preview and history support (unreleased 0.6.2)
+
+The full suite passes with 268 tests and 93.91% coverage. Ruff lint and formatting
+checks pass, as does a Gitleaks scan of the repository files. The first journal
+regressions were added before implementation and failed because the module did
+not exist.
+
+New tests exercise actual HA platform setup, device/entity registration, service
+results, the integration preview lock, background retries and recovery, reloads,
+failed platform unload, account removal and timer-driven history expiry. The
+standard Markdown card is rendered with HA's template engine against real entity
+states, including empty and removed-account states. Journal tests cover bounded
+retention, owner changes, redaction and storage/listener failures that must not
+interrupt successful writes. Existing blueprint and durable-job tests still pass.
+
+This version has not been released or installed on a live HA instance. Template
+rendering tests are not a browser screenshot or a claim of live UI validation.

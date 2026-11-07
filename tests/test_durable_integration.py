@@ -36,7 +36,9 @@ async def configured(hass):
     entry.add_to_hass(hass)
     hass.data["ha_strava"] = {"source": SimpleNamespace(oauth_session=AsyncMock())}
     await async_setup(hass, {})
-    await async_setup_entry(hass, entry)
+    hass.config.components.add(DOMAIN)
+    async with entry.setup_lock:
+        await async_setup_entry(hass, entry)
     hass.states.async_set("zone.home", "0", {"latitude": 0, "longitude": 0})
     activity = {
         "id": 9,

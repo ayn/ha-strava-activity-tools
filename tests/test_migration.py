@@ -129,13 +129,15 @@ async def test_setup_migrates_before_listening_and_clears_marker(hass, legacy, u
         await old_store.store.async_save(data)
     hass.data["ha_strava"] = {"source": SimpleNamespace(oauth_session=AsyncMock())}
     await async_setup(hass, {})
+    hass.config.components.add(DOMAIN)
     if unsafe:
         with pytest.raises(ConfigEntryNotReady):
             await async_setup_entry(hass, new)
         assert new.entry_id not in hass.data[DOMAIN]
         assert "legacy_entry_id" in new.data
     else:
-        assert await async_setup_entry(hass, new)
+        async with new.setup_lock:
+            assert await async_setup_entry(hass, new)
         assert "legacy_entry_id" not in new.data
         assert key in hass.data[DOMAIN][new.entry_id].worker.queue.jobs
     events = async_capture_events(hass, READY_EVENT)

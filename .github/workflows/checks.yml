@@ -5,6 +5,7 @@ on:
     paths:
       - custom_components/**
       - blueprints/**
+      - examples/**
       - tests/**
       - requirements-dev.txt
       - pyproject.toml
@@ -15,6 +16,7 @@ on:
     paths:
       - custom_components/**
       - blueprints/**
+      - examples/**
       - tests/**
       - requirements-dev.txt
       - pyproject.toml
