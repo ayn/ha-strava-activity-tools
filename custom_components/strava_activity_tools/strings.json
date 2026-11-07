@@ -66,12 +66,16 @@
         },
         "dry_run": {
           "name": "Preview only"
+        },
+        "expected": {
+          "name": "Expected preview state (optional)",
+          "description": "Abort if the sport, workout label, gear or indoor/manual flags changed since the suggestion. Pass the expected object returned by Suggest workout."
         }
       }
     },
     "append_environment": {
       "name": "Append historical AQI and UV",
-      "description": "Preview historical AQI/UV, or durably enqueue an idempotent append. Actual writes return a job ID and status; preview creates no pending write.",
+      "description": "Append historical US EPA AQI and UV worldwide from the run start location, using Open-Meteo/CAMS estimates. HA sensor history is optional. Preview is the default; durable retries preserve notes and source credit.",
       "fields": {
         "config_entry_id": {
           "name": "Strava Activity Tools account"
@@ -80,16 +84,25 @@
           "name": "Activity ID"
         },
         "aqi_entity": {
-          "name": "US EPA AQI sensor"
+          "name": "AQI sensor (HA history only)"
         },
         "uv_entity": {
-          "name": "UV index sensor"
+          "name": "UV sensor (HA history only)"
         },
         "radius_km": {
-          "name": "Weather coverage radius from home"
+          "name": "Weather coverage radius from home",
+          "description": "Only used with HA sensor history; location API mode has no home-area restriction."
         },
         "dry_run": {
           "name": "Preview only"
+        },
+        "weather_source": {
+          "name": "Weather source",
+          "description": "Location API provides worldwide US EPA AQI and UV without HA sensors or a home zone. Existing calls with sensors retain HA history behavior."
+        },
+        "external_fallback": {
+          "name": "Use historical API fallback",
+          "description": "Send rounded start coordinates and the UTC hour to Open-Meteo. API-derived annotations include source credit; disabled by default."
         }
       }
     },

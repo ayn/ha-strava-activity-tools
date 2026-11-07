@@ -1,6 +1,16 @@
 # Strava Activity Tools
 
+<img src="custom_components/strava_activity_tools/brand/icon.png" width="72" height="72" alt="Strava Activity Tools icon">
+
 Experimental, MIT-licensed Home Assistant companion for `ha_strava`.
+
+[![Open in HACS or Marketplace](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=ayn&repository=ha-strava-activity-tools&category=integration)
+[![Set up Strava Activity Tools](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=strava_activity_tools)
+
+**Early access:** requires `ha_strava` with activity-created events from
+[upstream #349](https://github.com/craibo/ha_strava/pull/349). The catalog submission
+and general onboarding wait for a provider release containing that feature.
+These buttons support custom-repository installation in the meantime.
 
 - Add historical US EPA AQI and UV at an outdoor run’s start location worldwide,
   or use optional HA sensor history.
@@ -15,17 +25,17 @@ update action with the returned state checks.
 This is an early community integration, not a default Marketplace listing.
 
 [Research](docs/RESEARCH.md) · [Architecture and delivery plan](docs/PLAN.md) ·
-[TDD evidence and validation](docs/VALIDATION.md)
+[TDD evidence and validation](docs/VALIDATION.md) · [Publishing readiness](docs/PUBLISHING.md)
 
 ## What the prototype does
 
 Three blueprints run through HA's native automation engine:
 
-| Blueprint | Conditions / action |
-| --- | --- |
-| [Mute activity](blueprints/automation/mute_activity.yaml) | Title/device exact or contains, sports, distance; hide from home feed |
-| [Assign gear](blueprints/automation/assign_gear.yaml) | Same filters; assign shoes or bike, or clear gear |
-| [Append environment](blueprints/automation/append_environment.yaml) | Outdoor GPS run worldwide; append historical AQI and UV |
+| Blueprint | Conditions / action | Install |
+| --- | --- | --- |
+| [Mute activity](blueprints/automation/mute_activity.yaml) | Title/device exact or contains, sports, distance; hide from home feed | [Import](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fayn%2Fha-strava-activity-tools%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fmute_activity.yaml) |
+| [Assign gear](blueprints/automation/assign_gear.yaml) | Same filters; assign shoes or bike, or clear gear | [Import](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fayn%2Fha-strava-activity-tools%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fassign_gear.yaml) |
+| [Append environment](blueprints/automation/append_environment.yaml) | Outdoor GPS run worldwide; append historical AQI and UV | [Import](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fayn%2Fha-strava-activity-tools%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fappend_environment.yaml) |
 
 **Preview is enabled by default**, independently for every automation. An additional
 integration-wide **Preview only** option defaults to enabled and prevents writes
@@ -64,18 +74,23 @@ includes strength and other sessions.
   OAuth owner if scopes are missing. This companion does not grant missing scopes.
 - HA recorder history only if selecting HA sensor history. Location API mode needs no HA weather sensors or home zone.
 
-Add `https://github.com/ayn/ha-strava-activity-tools` as a custom Integration
-repository in HACS (Marketplace on newer HA versions), then download and restart
-HA. This does not imply listing or approval in the default catalog.
+Use the **Open in HACS or Marketplace** button above, or add
+`https://github.com/ayn/ha-strava-activity-tools` as a custom Integration repository.
+The same repository and releases serve both stores. The older `hacs_repository`
+link opens HACS before HA 2026.11 and Marketplace starting with that version.
+Download the integration; restart when requested by the store. This does not imply
+listing or approval in the default catalog. The runtime test baseline remains
+HA 2026.10.4; a 2026.11 runtime test is still pending.
 
 For a manual installation, copy `custom_components/strava_activity_tools` into
 HA’s `custom_components` folder and restart. Add **Strava Activity Tools** in
 Settings → Devices & Services, select the loaded Strava entry, and enter the
 numeric athlete ID. Never copy an OAuth refresh token into this integration.
 
-Copy desired files from `blueprints/automation/` to
-`blueprints/automation/strava_activity_tools/` and create an automation from the
-Blueprints page. Start in preview mode. Existing users of the earlier
+Use an **Import** link in the blueprint table, or copy desired files from
+`blueprints/automation/` to `blueprints/automation/strava_activity_tools/`.
+Create an automation from the Blueprints page and start in preview mode.
+Blueprint imports are separate from integration installation. Existing users of the earlier
 `activity_tools` prototype should follow [the migration guide](docs/MIGRATION.md).
 
 Do not enable this enrichment alongside another writer doing the same job until

@@ -1,17 +1,24 @@
 {
   "domain": "strava_activity_tools",
   "name": "Strava Activity Tools",
-  "version": "0.6.1",
-  "config_flow": true,
+  "after_dependencies": [
+    "ha_strava",
+    "recorder"
+  ],
+  "categories": [
+    "health_wellbeing"
+  ],
   "codeowners": [
     "@ayn"
   ],
-  "documentation": "https://github.com/ayn/ha-strava-activity-tools",
-  "issue_tracker": "https://github.com/ayn/ha-strava-activity-tools/issues",
-  "after_dependencies": [
-    "ha_strava"
+  "config_flow": true,
+  "dependencies": [
+    "persistent_notification"
   ],
-  "iot_class": "cloud_push",
+  "documentation": "https://github.com/ayn/ha-strava-activity-tools",
   "integration_type": "service",
-  "requirements": []
+  "iot_class": "cloud_push",
+  "issue_tracker": "https://github.com/ayn/ha-strava-activity-tools/issues",
+  "requirements": [],
+  "version": "0.6.2"
 }
