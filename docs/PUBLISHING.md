@@ -68,17 +68,17 @@ Do not force a Core/store upgrade or add a second updater to work around an icon
    and native rule retries are not the durable fetch/environment queue.
 4. Pass HACS validation without `ignore` and pass hassfest on the final revision.
    Then publish a full GitHub release with a tag matching the manifest version.
-   Version 0.6.2 is preparation for that next release, not a published release.
-   A tested main build is installed on the owner's instance for validation; that
-   does not satisfy the clean-install/released-provider gate for other users.
+   Version 0.6.2 is an early-access custom-repository release of the tested
+   preview/history build. It does not satisfy the clean-install/released-provider
+   gate for catalog submission or general onboarding.
 5. Fork `hacs/default`, branch from `master`, and add
    `ayn/ha-strava-activity-tools` alphabetically to its `integration` list. Submit
    from the owner's account with maintainer edits enabled. Complete the template
    with the release and passing action-run links; do not request reviewers.
 
-Catalog submission and the next release are intentionally pending the upstream
-release and installation validation. Existing custom-repository releases remain
-available. Catalog review can take months; no acceptance date is promised.
+Catalog submission is intentionally pending the upstream release and installation
+validation. Early-access custom-repository releases remain available to users
+whose provider already meets the event prerequisite. Catalog review can take months; no acceptance date is promised.
 
 References: [catalog submission](https://contributors.home-assistant.io/marketplace/guides/catalog/),
 [custom integration publishing](https://contributors.home-assistant.io/marketplace/guides/integrations/),
