@@ -7,6 +7,8 @@ on:
       - blueprints/**
       - examples/**
       - tests/**
+      - scripts/provider_release.py
+      - provider-compatibility.json
       - requirements-dev.txt
       - pyproject.toml
       - hacs.json
@@ -18,6 +20,8 @@ on:
       - blueprints/**
       - examples/**
       - tests/**
+      - scripts/provider_release.py
+      - provider-compatibility.json
       - requirements-dev.txt
       - pyproject.toml
       - hacs.json

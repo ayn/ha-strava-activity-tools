@@ -1,0 +1,11 @@
+{
+  "baseline": {
+    "repository": "ayn/ha_strava",
+    "ref": "80d2564b7a2dc3b7cb5e8600577fb45b71b5af2d",
+    "note": "Reviewed event-capable build from craibo/ha_strava PR #349; not an upstream release."
+  },
+  "upstream_repository": "craibo/ha_strava",
+  "known_unsupported": {
+    "4.6.7": "d5fcffe56555c537ae63a48e422ceb3045cb5b8c"
+  }
+}
