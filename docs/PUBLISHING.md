@@ -25,6 +25,31 @@ means the catalog team has approved the integration.
 Track the remaining release gates in [issue #6](https://github.com/ayn/ha-strava-activity-tools/issues/6).
 Feature proposals and reliability work are indexed in [PLAN.md](PLAN.md).
 
+## Releases and update prompts
+
+- Documentation-only changes (including README, AGENTS.md and setup guides) do
+  not bump the project/manifest version and do not create tags or GitHub releases.
+  Existing Markdown-only CI filters must continue to skip those commits.
+- Cut a release for changes users need to install: integration behavior, shipped
+  blueprints, assets, or required packaging/compatibility fixes. Keep published
+  release tags immutable. Do not release every merged PR.
+- Recommend versioned releases for normal installations. A docs commit on main
+  does not change an installed release tag. HACS development-branch installs can
+  react to commits, including docs commits, and commit hashes do not compare as
+  semantic release versions. Do not promise release-style filtering for main.
+- If HACS offers an older stable release after a deliberately installed development
+  build, verify both versions before proceeding. Skipping that specific older
+  version avoids an unintended downgrade without hiding later release versions.
+  Do not reset receipts, disable the update entity, or publish a release solely
+  to silence this mismatch.
+
+Legacy HACS update entities may still request icons from the external brands
+site instead of HA's local brands API, displaying an “icon not available”
+placeholder for integrations with packaged branding. The integration ships its
+own assets; verify the requested image URL before changing those files. Track
+the upstream behavior in [hacs/integration #5171](https://github.com/hacs/integration/issues/5171).
+Do not force a Core/store upgrade or add a second updater to work around an icon.
+
 ## Before catalog submission
 
 1. Wait for an upstream `ha_strava` release containing the activity-created event

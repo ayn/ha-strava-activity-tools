@@ -4,6 +4,9 @@
 - Use red/green tests for behavioral changes. Keep fixtures synthetic: no real
   activities, accounts, routes, locations, tokens or production configuration.
 - Run pytest and Ruff before committing. Preserve docs-only CI path filters.
+- Documentation-only changes must not bump package/manifest versions, create
+  release tags or publish GitHub releases. Normal HA installs track versioned
+  releases; do not publish a new version just to clear a development-build prompt.
 - Reuse the existing Strava integration's OAuth session and webhook subscription.
   Do not add copied tokens, another credential store or activity polling.
 - Dry runs must not write. Verify ownership before disclosure or mutation, use
