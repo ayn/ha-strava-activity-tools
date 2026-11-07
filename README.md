@@ -24,7 +24,8 @@ enabled native automation can apply their proposed tags and shoes through the
 update action with the returned state checks.
 This is an early community integration, not a default Marketplace listing.
 
-[Research](docs/RESEARCH.md) · [Architecture and delivery plan](docs/PLAN.md) ·
+[Research](docs/RESEARCH.md) · [Roadmap](docs/PLAN.md) ·
+[Feature tracker](https://github.com/ayn/ha-strava-activity-tools/issues/5) ·
 [TDD evidence and validation](docs/VALIDATION.md) · [Publishing readiness](docs/PUBLISHING.md)
 
 ## What the prototype does
