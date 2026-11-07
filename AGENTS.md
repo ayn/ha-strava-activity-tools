@@ -15,3 +15,27 @@
   Feed mute is not activity privacy.
 - Do not deploy to a user's HA instance or change real activities unless the user
   authorizes that work. Publishing code does not authorize deployment.
+
+## Helping someone install or configure this integration
+
+Read [the agent setup guide](docs/AGENT_SETUP.md) before working on a live HA
+instance. It covers HA MCP discovery, the provider prerequisite, account/scopes,
+blueprints, history/dashboard setup, verification and rollback.
+
+- Discover existing `ha_strava` and companion entries first. Never assume the
+  first account is the intended one or create a duplicate to fix authorization.
+- A loaded `ha_strava` connection with the required activity-created event is a
+  prerequisite. The companion does not install it automatically. Explain missing
+  prerequisites; never silently patch the provider or copy OAuth tokens.
+- New installs keep both integration and automation previews enabled until the
+  user asks to enable writes. Upgrades preserve existing settings and receipts.
+- Use HA MCP's dedicated store/config-flow/blueprint/dashboard tools and native
+  APIs. Do not edit `.storage`, request secrets in chat, or bypass store notices.
+- Help the user find results: create an explicitly requested dashboard using
+  native cards, or explain the integration's Latest preview/Latest run entities.
+  History entities require the newer build described in the README.
+- Verify a read-only preview, account isolation, enabled consumers, preserved job
+  receipts and clean logs. A successful download is not proof the new code loaded.
+  Never fire a synthetic activity-created event into live write automations.
+- Report the installed version/ref, restart outcome, where results appear and any
+  remaining user steps. Record only sanitized validation in this public repo.

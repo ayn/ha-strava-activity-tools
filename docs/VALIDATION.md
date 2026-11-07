@@ -67,5 +67,15 @@ states, including empty and removed-account states. Journal tests cover bounded
 retention, owner changes, redaction and storage/listener failures that must not
 interrupt successful writes. Existing blueprint and durable-job tests still pass.
 
-This version has not been released or installed on a live HA instance. Template
-rendering tests are not a browser screenshot or a claim of live UI validation.
+The tested main build was subsequently installed through the HACS custom
+repository on one private HA 2026.10.4 instance. After restart, both history
+entities loaded, existing options and job receipts were preserved, existing
+consumers retained their enabled states, and integration error logs were clear.
+A read-only track preview appeared in the new history entity and a native
+dashboard. Saved dashboard configuration and live Markdown rendering were
+verified. Processing history begins with new actions; old receipts were not
+backfilled. No new Strava mutation was performed for this validation.
+
+This remains an unreleased build, not a default catalog release. Dashboard
+screenshots were unavailable on that instance; live template rendering is not
+a browser screenshot or a claim of visual validation across screen sizes.

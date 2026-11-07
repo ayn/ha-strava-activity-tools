@@ -43,7 +43,9 @@ Feature proposals and reliability work are indexed in [PLAN.md](PLAN.md).
    and native rule retries are not the durable fetch/environment queue.
 4. Pass HACS validation without `ignore` and pass hassfest on the final revision.
    Then publish a full GitHub release with a tag matching the manifest version.
-   Version 0.6.2 is preparation for that next release, not a released/deployed build.
+   Version 0.6.2 is preparation for that next release, not a published release.
+   A tested main build is installed on the owner's instance for validation; that
+   does not satisfy the clean-install/released-provider gate for other users.
 5. Fork `hacs/default`, branch from `master`, and add
    `ayn/ha-strava-activity-tools` alphabetically to its `integration` list. Submit
    from the owner's account with maintainer edits enabled. Complete the template
