@@ -61,6 +61,7 @@ proof of API access or measured user demand.
 | [#18: Add gear mileage and maintenance reminders using native HA notifications](https://github.com/ayn/ha-strava-activity-tools/issues/18) | Notify on trustworthy gear distance/time thresholds. |
 | [#19: Design opt-in activity-update handling that respects manual overrides](https://github.com/ayn/ha-strava-activity-tools/issues/19) | React to useful edits without loops or overriding manual choices. |
 | [#20: Extend calendar-assisted Workout tagging to cycling sessions](https://github.com/ayn/ha-strava-activity-tools/issues/20) | Bring conservative matching to supported cycling activity types. |
+| [#22: Structured planned-workout integration](https://github.com/ayn/ha-strava-activity-tools/issues/22) | Reuse Workoutbridge/Prescribed.fit plans for optional completion matching. |
 
 ## Implementation boundaries
 
