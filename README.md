@@ -28,7 +28,7 @@ This is an early community integration, not a default Marketplace listing.
 [Feature tracker](https://github.com/ayn/ha-strava-activity-tools/issues/5) ·
 [TDD evidence and validation](docs/VALIDATION.md) · [Publishing readiness](docs/PUBLISHING.md)
 
-## What the prototype does
+## Available features
 
 Three blueprints run through HA's native automation engine:
 
@@ -105,6 +105,8 @@ Strava entry ID, plus an activity ID. Responses are available in automation trac
 
 - `strava_activity_tools.get_activity`: fetch selected condition fields by ID.
 - `strava_activity_tools.match_activity`: evaluate filters without writing.
+- `strava_activity_tools.suggest_workout`: preview calendar/lap matching and track-shoe suggestions.
+- `strava_activity_tools.detect_track`: inspect GPS track evidence without writing.
 - `strava_activity_tools.update_activity`: preview or update explicit documented fields.
 - `strava_activity_tools.append_environment`: preview, or durably enqueue a historical append.
 - `strava_activity_tools.list_jobs`: inspect jobs and retry/error status without an API request.
@@ -120,7 +122,8 @@ window remains. These generic updates are not durable queued jobs.
 
 Update fields: `name`, `description`, `sport_type`, `gear_id`, `hide_from_home`,
 `trainer`, `commute`. Unsupported/private API fields are rejected. Gear IDs use
-`b…` for bikes and `g…` for shoes; `none` clears gear. A gear picker is planned.
+`b…` for bikes and `g…` for shoes; `none` clears gear. The track-shoe picker is
+available in Configure; a [generic shoe/bike picker](https://github.com/ayn/ha-strava-activity-tools/issues/13) is planned.
 
 The bridge consumes `ha_strava_activity_created` and emits
 `strava_activity_tools_activity_ready` with account/activity IDs, title, device, sport,
@@ -130,10 +133,8 @@ error category and IDs for repair, not the raw API response.
 
 ## AQI/UV behavior
 
-- Use a **US EPA AQI index** sensor, not PM2.5 concentration or a different national index.
-- Select the UV index sensor separately. Units are not guessed or converted.
-- Read the recorder snapshot at the activity's timezone-aware UTC start.
-- Delayed uploads work while sensor history is available, up to seven days here.
+- Use historical data at the activity's timezone-aware UTC start, up to seven
+  days after the activity. Delayed uploads do not use current conditions.
 - Require an outdoor, non-manual `Run`/`TrailRun` with valid GPS.
 - Location-based mode (`weather_source: location_api`) gets historical hourly
   US EPA AQI and cloudy-sky UV from Open-Meteo/CAMS at the run's start location.
@@ -144,8 +145,10 @@ error category and IDs for repair, not the raw API response.
   API at home as well as while traveling.
 - HA sensor history is optional (`weather_source: ha_history`). In that mode,
   prefer local history within the home radius, with optional `external_fallback`
-  for away runs or missing readings. Existing sensor-based calls retain this
-  behavior and their original saved-job identities.
+  for away runs or missing readings. Select a **US EPA AQI index** sensor and a
+  UV index sensor; units are not guessed or converted from PM2.5 or another index.
+  This mode reads the Recorder snapshot at the activity's start. Existing
+  sensor-based calls retain their behavior and original saved-job identities.
 - Unknown/missing readings never become zero. Actual UV zero is valid.
 - Append missing lines only; preserve existing notes and existing AQI/UV lines.
 - Use familiar AQI/UV color bands, with an explicit hazardous label above AQI 300.
@@ -232,8 +235,9 @@ dates use the activity's IANA timezone, including daylight saving boundaries.
 This is an initial interval matcher, not a general workout parser: continuous
 threshold/tempo/progression and inferred coach units still need further work.
 A matching date alone does not establish that the prescribed session was done.
-Suggestions on multiple uploads are not a unique assignment across those uploads;
-that needs a separate matching policy before any automatic writes.
+A match does not reserve a prescription for one upload: multiple activities can
+match the same calendar entry. [Doubles/session assignment](https://github.com/ayn/ha-strava-activity-tools/issues/17)
+is planned; account for this limitation when enabling automatic writes.
 
 The generic `update_activity` action also accepts integer `workout_type`: run
 codes 0–3 and cycling codes 10–12, with sport validation and post-write verification.
@@ -290,6 +294,30 @@ using `update_activity` and the `expected` snapshot. The snapshot checks preserv
 intervening changes to sport, label, gear and indoor/manual flags. The generic
 update action has no durable retry queue: native delays/repeats are automation
 configuration and pending attempts do not survive a Core restart.
+
+## Planned features
+
+These are proposals, not available features or delivery commitments. See the
+[pinned roadmap](https://github.com/ayn/ha-strava-activity-tools/issues/5) for
+priorities, acceptance criteria and discussion.
+
+- [Durable mute/tag/gear jobs](https://github.com/ayn/ha-strava-activity-tools/issues/7),
+  plus [guided setup](https://github.com/ayn/ha-strava-activity-tools/issues/9) and
+  [processing health, previews and repair](https://github.com/ayn/ha-strava-activity-tools/issues/10).
+- [Importable workout/track-shoe blueprints](https://github.com/ayn/ha-strava-activity-tools/issues/11),
+  [rule exceptions and metric units](https://github.com/ayn/ha-strava-activity-tools/issues/12),
+  and [friendly shoe/bike pickers](https://github.com/ayn/ha-strava-activity-tools/issues/13).
+- [Use the matched workout title](https://github.com/ayn/ha-strava-activity-tools/issues/24):
+  `Morning Run` → `3 × 20 × 400`, with opt-in renaming and manual-title protection.
+- [Title/description templates](https://github.com/ayn/ha-strava-activity-tools/issues/14)
+  and [optional historical weather fields and formatting](https://github.com/ayn/ha-strava-activity-tools/issues/15).
+- [Continuous quality sessions](https://github.com/ayn/ha-strava-activity-tools/issues/16),
+  [doubles and warm-up/cooldown context](https://github.com/ayn/ha-strava-activity-tools/issues/17),
+  and [cycling workout matching](https://github.com/ayn/ha-strava-activity-tools/issues/20).
+- [Gear mileage and maintenance reminders](https://github.com/ayn/ha-strava-activity-tools/issues/18).
+- [Optional Workoutbridge/Prescribed.fit integration](https://github.com/ayn/ha-strava-activity-tools/issues/22)
+  to match completed activities against structured plans. The design would support
+  self-hosted and hosted sources, with no hosted account required by this component.
 
 ## Development
 
