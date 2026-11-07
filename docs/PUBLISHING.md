@@ -1,0 +1,56 @@
+# HACS and Marketplace readiness
+
+One repository, domain and release stream serves both HACS and the built-in
+Marketplace. They share the `hacs/default` catalog and the `hacs.json` manifest.
+The README uses the older `hacs_repository` My Home Assistant link because it
+opens HACS before HA 2026.11 and Marketplace on newer releases. Blueprints use
+separate import links; they are not catalog entries.
+
+## Preparation in this repository
+
+- Public MIT repository, issues, topics, README, config flow and complete English
+  translations.
+- Local original icon assets in `custom_components/strava_activity_tools/brand/`.
+  Editable artwork is in `assets/icon.svg`; export at 256 and 512 square pixels.
+- The `health_wellbeing` integration category and matching project/manifest version.
+- HACS validation with `category: integration` and no ignored checks, plus hassfest.
+  `.github/workflows/publish-validation.yml` runs them on relevant pull requests,
+  relevant pushes to main, and manual dispatch. Documentation-only commits skip CI.
+- Existing synthetic HA tests, Ruff and coverage checks remain in `checks.yml`.
+
+A validator run is evidence only after it passes; the workflow definition alone
+is not validation. Neither custom-repository installation nor passing validators
+means the catalog team has approved the integration.
+
+## Before catalog submission
+
+1. Wait for an upstream `ha_strava` release containing the activity-created event
+   from [#349](https://github.com/craibo/ha_strava/pull/349). A clean installation
+   must not require the user to patch provider files. The legacy fix
+   [#352](https://github.com/craibo/ha_strava/pull/352) helps older accounts; generic
+   fetch/write [#353](https://github.com/craibo/ha_strava/pull/353) is not currently
+   required by the companion. The independent retry test is
+   [#351](https://github.com/craibo/ha_strava/pull/351).
+2. Test a clean install, updates, retained receipts and preview/write choices with
+   that released provider on HA 2026.10.4 and Marketplace-era HA. Current runtime
+   coverage is 2026.10.4; do not claim a broader matrix before running it. The
+   currently published custom-component test harness targets 2026.10.4.
+3. Finish broad positive live-write validation with synthetic public fixtures
+   and private operational checks. Keep limitations explicit: matching can abstain,
+   and native rule retries are not the durable fetch/environment queue.
+4. Pass HACS validation without `ignore` and pass hassfest on the final revision.
+   Then publish a full GitHub release with a tag matching the manifest version.
+   Version 0.6.2 is preparation for that next release, not a released/deployed build.
+5. Fork `hacs/default`, branch from `master`, and add
+   `ayn/ha-strava-activity-tools` alphabetically to its `integration` list. Submit
+   from the owner's account with maintainer edits enabled. Complete the template
+   with the release and passing action-run links; do not request reviewers.
+
+Catalog submission and the next release are intentionally pending the upstream
+release and installation validation. Existing custom-repository releases remain
+available. Catalog review can take months; no acceptance date is promised.
+
+References: [catalog submission](https://contributors.home-assistant.io/marketplace/guides/catalog/),
+[custom integration publishing](https://contributors.home-assistant.io/marketplace/guides/integrations/),
+[validation](https://contributors.home-assistant.io/marketplace/reference/validation/),
+[brand assets](https://contributors.home-assistant.io/core/integrations/brands/).
