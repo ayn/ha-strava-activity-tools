@@ -5,6 +5,7 @@ blueprint:
     Uses Open-Meteo/CAMS estimates without needing HA sensors or a home zone.
     Optionally select HA sensor history for local runs. No current-state fallback.
     Existing notes and annotations are preserved. Preview is enabled by default.
+  source_url: https://github.com/ayn/ha-strava-activity-tools/blob/main/blueprints/automation/append_environment.yaml
   domain: automation
   homeassistant:
     min_version: 2026.10.4

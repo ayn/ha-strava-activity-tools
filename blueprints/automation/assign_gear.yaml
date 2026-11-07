@@ -3,6 +3,7 @@ blueprint:
   description: >-
     Choose shoes or a bike by Strava gear ID. All selected filters combine with AND.
     Preview is enabled by default. An empty sport list matches any sport.
+  source_url: https://github.com/ayn/ha-strava-activity-tools/blob/main/blueprints/automation/assign_gear.yaml
   domain: automation
   homeassistant:
     min_version: 2026.10.4

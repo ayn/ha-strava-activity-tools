@@ -4,6 +4,7 @@ blueprint:
     Match selected title/device/sport/distance fields, then hide the activity from the home feed.
     Filters combine with AND. This does not change activity privacy or delete the activity.
     Use separate automations for OR rules. Preview is enabled by default.
+  source_url: https://github.com/ayn/ha-strava-activity-tools/blob/main/blueprints/automation/mute_activity.yaml
   domain: automation
   homeassistant:
     min_version: 2026.10.4
