@@ -22,6 +22,9 @@ A validator run is evidence only after it passes; the workflow definition alone
 is not validation. Neither custom-repository installation nor passing validators
 means the catalog team has approved the integration.
 
+Track the remaining release gates in [issue #6](https://github.com/ayn/ha-strava-activity-tools/issues/6).
+Feature proposals and reliability work are indexed in [PLAN.md](PLAN.md).
+
 ## Before catalog submission
 
 1. Wait for an upstream `ha_strava` release containing the activity-created event

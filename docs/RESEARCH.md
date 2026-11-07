@@ -31,7 +31,7 @@ is not guaranteed by the documented Strava API. Expose actual `device_name` and
 title values, and support a title fallback for sources such as Tractive. Do not
 pretend every record has source-app metadata.
 
-## Feature priorities
+## Initial feature priorities (2026-11-06)
 
 **First:** dependable activity-created trigger; fetch by ID; account isolation;
 optional scoped writes; mute; gear assignment; description edits; previews;
@@ -123,3 +123,34 @@ OAuth ownership and avoid adding a second refresh-token manager. It is not a
 calendar or track-classification engine. The initial search did not identify a
 maintained, directly reusable HA GPS track detector; this is a scoped finding,
 not a claim that none exists.
+
+## Roadmap refresh (2026-11-07)
+
+The initial priorities above are a historical research snapshot. Several are now
+implemented: native mute/gear actions, durable fetch/environment jobs, worldwide
+historical AQI/UV, and conservative calendar/track/shoe suggestions. Remaining
+work is tracked in the [roadmap issue](https://github.com/ayn/ha-strava-activity-tools/issues/5)
+and indexed in [PLAN.md](PLAN.md); ideas are not delivery commitments.
+
+The latest primary feature pages reinforce these practical directions:
+
+- [ActivityFix’s FAQ](https://activityfix.com/faq) describes an explicit Test Rule
+  workflow, trainer/virtual-ride distinctions and device/sensor conditions. Bring
+  clear previews and explanations to native HA actions, while distinguishing
+  actual Strava fields from data requiring another provider connection.
+- [Strautomator](https://strautomator.com/home) advertises conditional names,
+  commute/workout tags, feed mute, gear selection, weather, counters and gear
+  maintenance reminders. Reusable HA blueprints, friendly gear selection,
+  deterministic templates and deduplicated threshold notifications fit this
+  project better than a second rule editor or another OAuth implementation.
+- [Klimat](https://klimat.app/features) lists optional weather metrics, configurable
+  units/templates and annotation positions. Offer opt-in historical fields and
+  presentation choices while preserving notes, attribution and minimal requests.
+
+Reliability work comes first: durable generic writes, safe lifecycle cleanup and
+clear onboarding/repair. More complex calendar matching, edit-event handling,
+cycling and maintenance reminders are proposals with data/API investigations in
+their issues. Advertised competitor features do not prove our API access or
+establish demand; ask users for concrete examples before widening scope. AI
+activity-data analysis, route-history storage and undocumented privacy/map writes
+remain outside this roadmap.
