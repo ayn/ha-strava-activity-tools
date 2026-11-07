@@ -89,6 +89,14 @@
         "selector": {
           "boolean": {}
         }
+      },
+      "expected": {
+        "name": "Expected preview state (optional)",
+        "description": "Abort if the sport, workout label, gear or indoor/manual flags changed since the suggestion. Pass the expected object returned by Suggest workout.",
+        "required": false,
+        "selector": {
+          "object": {}
+        }
       }
     }
   },

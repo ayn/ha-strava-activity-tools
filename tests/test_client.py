@@ -316,3 +316,79 @@ async def test_shoe_catalog_rejects_wrong_athlete(api):
     api.activity = {"id": 99, "shoes": [{"id": "g123", "name": "Someone else's shoes"}]}
     with pytest.raises(ActivityError, match="wrong_athlete"):
         await ActivityClient(api, "42").shoes()
+
+
+@pytest.mark.parametrize("late", [False, True])
+async def test_expected_preview_state_preserves_manual_label_and_shoes(api, late):
+    api.activity.update(sport_type="Run", workout_type=0, trainer=False, manual=False)
+    expected = {
+        key: api.activity.get(key)
+        for key in ("sport_type", "workout_type", "gear_id", "trainer", "manual")
+    }
+    if late:
+        original = api.async_request
+        gets = 0
+
+        async def racing(method, url, **kwargs):
+            nonlocal gets
+            if method == "GET":
+                gets += 1
+                if gets == 2:
+                    api.activity.update(workout_type=1, gear_id="g99")
+            return await original(method, url, **kwargs)
+
+        api.async_request = racing
+    else:
+        api.activity.update(workout_type=1, gear_id="g99")
+    with pytest.raises(ActivityError, match="activity_changed_retry"):
+        await ActivityClient(api, "42").update(
+            "9", {"workout_type": 3, "gear_id": "g2"}, False, expected=expected
+        )
+    assert not writes(api)
+    assert api.activity["gear_id"] == "g99"
+
+
+async def test_expected_preview_can_write_and_duplicate_is_noop(api):
+    api.activity.update(sport_type="Run", workout_type=0)
+    client = ActivityClient(api, "42")
+    expected = {"sport_type": "Run", "workout_type": 0, "gear_id": "g1"}
+    result = await client.update(
+        "9", {"workout_type": 3, "gear_id": "g2"}, False, expected=expected
+    )
+    assert result["status"] == "updated"
+    assert len(writes(api)) == 1
+    fresh = {key: api.activity.get(key) for key in expected}
+    repeated = await client.update("9", {"workout_type": 3, "gear_id": "g2"}, False, expected=fresh)
+    assert repeated["status"] == "unchanged"
+    assert len(writes(api)) == 1
+
+
+@pytest.mark.parametrize(
+    "expected",
+    [{}, {"access_token": "bad"}, {"trainer": 1}, {"workout_type": True}, {"gear_id": 42}],
+)
+async def test_invalid_preconditions_fail_before_request(api, expected):
+    with pytest.raises(ActivityError, match="invalid_preconditions"):
+        await ActivityClient(api, "42").update("9", {"gear_id": "g2"}, False, expected=expected)
+    assert not api.calls
+
+
+async def test_indoor_flag_changed_after_preview_blocks_shoe_write(api):
+    api.activity.update(sport_type="Run", trainer=False)
+    original = api.async_request
+    gets = 0
+
+    async def racing(method, url, **kwargs):
+        nonlocal gets
+        if method == "GET":
+            gets += 1
+            if gets == 2:
+                api.activity["trainer"] = True
+        return await original(method, url, **kwargs)
+
+    api.async_request = racing
+    with pytest.raises(ActivityError, match="activity_changed_retry"):
+        await ActivityClient(api, "42").update(
+            "9", {"gear_id": "g2"}, False, expected={"trainer": False}
+        )
+    assert not writes(api)

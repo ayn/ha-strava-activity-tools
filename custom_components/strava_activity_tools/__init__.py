@@ -117,7 +117,12 @@ async def async_setup(hass: HomeAssistant, config: dict[str, Any]) -> bool:
                     "preview_only": True,
                 }
             if call.service == "update_activity":
-                return await client.update(activity_id, dict(call.data["changes"]), preview)
+                kwargs = (
+                    {"expected": dict(call.data["expected"])} if "expected" in call.data else {}
+                )
+                return await client.update(
+                    activity_id, dict(call.data["changes"]), preview, **kwargs
+                )
             if call.service == "suggest_workout":
                 activity = await client.get(activity_id)
                 calendar = call.data["calendar_entity"]
@@ -164,6 +169,10 @@ async def async_setup(hass: HomeAssistant, config: dict[str, Any]) -> bool:
                 return {
                     "activity_id": activity_id,
                     "preview_only": True,
+                    "expected": {
+                        key: activity.get(key)
+                        for key in ("sport_type", "workout_type", "gear_id", "trainer", "manual")
+                    },
                     **workout,
                     "is_workout": activity.get("workout_type") == 3
                     or workout["status"] == "suggested",
@@ -195,6 +204,7 @@ async def async_setup(hass: HomeAssistant, config: dict[str, Any]) -> bool:
         },
         "update_activity": {
             vol.Required("changes"): dict,
+            vol.Optional("expected"): dict,
             vol.Optional("dry_run", default=True): cv.boolean,
         },
         "append_environment": {

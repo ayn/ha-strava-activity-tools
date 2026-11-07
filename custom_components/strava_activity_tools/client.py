@@ -55,6 +55,27 @@ def validate_changes(changes: dict[str, Any]) -> None:
             raise ActivityError("invalid_changes")
 
 
+def validate_expected(expected: dict[str, Any] | None) -> None:
+    """Preconditions only accept the classification fields returned by previews."""
+    if expected is None:
+        return
+    if not isinstance(expected, dict) or not expected:
+        raise ActivityError("invalid_preconditions")
+    for key, value in expected.items():
+        if key in ("trainer", "manual"):
+            valid = value is None or type(value) is bool
+        elif key == "workout_type":
+            valid = value is None or (type(value) is int and value in (0, 1, 2, 3, 10, 11, 12))
+        elif key == "gear_id":
+            valid = value is None or (isinstance(value, str) and re.fullmatch(r"[bg][0-9]+", value))
+        elif key == "sport_type":
+            valid = isinstance(value, str) and bool(value)
+        else:
+            valid = False
+        if not valid:
+            raise ActivityError("invalid_preconditions")
+
+
 class ActivityClient:
     """Serialize modifications per athlete and re-read before touching a field."""
 
@@ -145,11 +166,16 @@ class ActivityClient:
         activity_id: str,
         transform: Callable[[dict[str, Any]], dict[str, Any]],
         dry_run: bool,
+        *,
+        expected: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
+        validate_expected(expected)
         if type(dry_run) is not bool:
             raise ActivityError("invalid_dry_run")
         async with self._lock:
             before = await self.get(activity_id)
+            if expected and any(before.get(key) != value for key, value in expected.items()):
+                raise ActivityError("activity_changed_retry")
             changes = transform(before)
             validate_changes(changes)
             if "workout_type" in changes:
@@ -176,8 +202,13 @@ class ActivityClient:
             if dry_run or not changes:
                 return result
             latest = await self.get(activity_id)
-            if any(latest.get(key) != before.get(key) for key in changes) or (
-                "workout_type" in changes and latest.get("sport_type") != before.get("sport_type")
+            if (
+                (expected and any(latest.get(key) != value for key, value in expected.items()))
+                or any(latest.get(key) != before.get(key) for key in changes)
+                or (
+                    "workout_type" in changes
+                    and latest.get("sport_type") != before.get("sport_type")
+                )
             ):
                 raise ActivityError("activity_changed_retry")
             await self._request(
@@ -200,7 +231,9 @@ class ActivityClient:
         activity_id: str,
         changes: dict[str, Any],
         dry_run: bool = True,
+        *,
+        expected: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Preview by default; no full-object PUT that overwrites unrelated fields."""
         validate_changes(changes)
-        return await self.transform(activity_id, lambda _: changes, dry_run)
+        return await self.transform(activity_id, lambda _: changes, dry_run, expected=expected)

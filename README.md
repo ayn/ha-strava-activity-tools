@@ -92,6 +92,14 @@ Strava entry ID, plus an activity ID. Responses are available in automation trac
 - `strava_activity_tools.list_jobs`: inspect jobs and retry/error status without an API request.
 - `strava_activity_tools.replay_job`: replay a failed, unexpired job after fixing its cause.
 
+`suggest_workout` also returns an `expected` snapshot of the label, gear, sport,
+and indoor/manual flags. An explicitly enabled native automation can pass its
+proposed tag/shoe changes and that snapshot to `update_activity` with `dry_run: false`.
+The update aborts if those fields changed after the preview, including just before
+the write; this preserves intervening manual choices. Suggestions themselves remain
+read-only. Strava does not offer an atomic conditional write, so a final network-race
+window remains. These generic updates are not durable queued jobs.
+
 Update fields: `name`, `description`, `sport_type`, `gear_id`, `hide_from_home`,
 `trainer`, `commute`. Unsupported/private API fields are rejected. Gear IDs use
 `b…` for bikes and `g…` for shoes; `none` clears gear. A gear picker is planned.

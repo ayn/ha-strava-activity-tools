@@ -474,6 +474,10 @@ async def test_calendar_suggestion_service_is_read_only(hass, configured):
     assert result["changes"] == {"workout_type": 3}
     assert result["preview_only"] is True
     assert result["is_workout"] is True
+    assert result["expected"] == {
+        key: activity.get(key)
+        for key in ("sport_type", "workout_type", "gear_id", "trainer", "manual")
+    }
     assert result["on_track"] is False
     assert not update.called
     assert calls[0]["start_date_time"] == "2026-01-09T00:00:00+00:00"
@@ -589,3 +593,28 @@ async def test_missing_shoe_scope_does_not_block_preview_lock_and_can_start_sour
         assert entry.options["preview_only"] is True
         assert "reauthorize_strava" not in entry.options
         reauth.assert_called_once_with(hass)
+
+
+async def test_service_passes_preview_preconditions_and_retains_write_lock(hass, configured):
+    entry, _ = configured
+    client = hass.data[DOMAIN][entry.entry_id].client
+    expected = {"sport_type": "Run", "gear_id": None, "workout_type": None}
+    for locked in (False, True):
+        hass.config_entries.async_update_entry(entry, options={"preview_only": locked})
+        with patch.object(
+            client, "update", AsyncMock(return_value={"status": "would_update"})
+        ) as update:
+            await hass.services.async_call(
+                DOMAIN,
+                "update_activity",
+                {
+                    "config_entry_id": entry.entry_id,
+                    "activity_id": "9",
+                    "changes": {"workout_type": 3},
+                    "expected": expected,
+                    "dry_run": False,
+                },
+                blocking=True,
+                return_response=True,
+            )
+            update.assert_awaited_once_with("9", {"workout_type": 3}, locked, expected=expected)
