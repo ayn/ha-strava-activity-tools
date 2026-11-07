@@ -18,6 +18,10 @@
   Feed mute is not activity privacy.
 - Do not deploy to a user's HA instance or change real activities unless the user
   authorizes that work. Publishing code does not authorize deployment.
+- For provider-boundary changes, run the real-provider suite described in
+  [COMPATIBILITY.md](docs/COMPATIBILITY.md). Do not claim compatibility from skipped
+  tests, silently exempt new upstream releases, or update the baseline pin without
+  reviewing and testing that provider revision.
 
 ## Helping someone install or configure this integration
 

@@ -1,0 +1,2 @@
+# HA's camera platform is loaded by the real provider, even with photo fetching off.
+PyTurboJPEG==1.8.3

@@ -6,3 +6,4 @@ htmlcov/
 .ruff_cache/
 *.egg-info/
 .env*
+.compat/

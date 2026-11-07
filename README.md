@@ -409,4 +409,10 @@ Behavioral tests cover real HA config flows, services, event dispatch, recorder
 SQL history, and blueprint execution, with fake OAuth responses. Live deployment
 and public release validation are deliberately separate from these tests.
 
+The separate [real-provider compatibility suite](docs/COMPATIBILITY.md) checks
+the actual `ha_strava` webhook, coordinator/OAuth handoff and account isolation.
+CI uses an immutable event-capable baseline; a six-hour release watcher checks
+new upstream stable releases without touching a user's HA instance. Known missing
+prerequisites are reported explicitly. Copilot is not required to run these tests.
+
 License: MIT. Code is original to this prototype; no competitor implementation was copied.
