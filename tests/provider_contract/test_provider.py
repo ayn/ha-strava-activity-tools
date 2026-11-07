@@ -1,12 +1,21 @@
 """Black-box contracts across both integrations, not manually fired HA events."""
 
+import socket
+
 import pytest
 from homeassistant.exceptions import HomeAssistantError
 from pytest_homeassistant_custom_component.common import async_capture_events
+from pytest_socket import SocketConnectBlockedError
 
 from custom_components.strava_activity_tools.const import DOMAIN, READY_EVENT
 
 from .conftest import delivery
+
+
+async def test_external_network_is_blocked(linked):
+    with socket.socket() as connection:
+        with pytest.warns(UserWarning, match="A test tried"), pytest.raises(SocketConnectBlockedError):
+            connection.connect(("192.0.2.1", 443))
 
 
 async def test_real_webhook_oauth_handoff_and_duplicate_delivery(hass, linked):

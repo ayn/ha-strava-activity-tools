@@ -10,6 +10,7 @@ from aiohttp import web
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.setup import async_setup_component
 from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_socket import socket_allow_hosts
 
 import custom_components
 
@@ -31,7 +32,13 @@ def provider_package(monkeypatch, enable_custom_integrations):
 
 
 @pytest.fixture
-async def linked(hass, provider_package, socket_enabled, aiohttp_server, hass_client, monkeypatch):
+def local_network(socket_enabled):
+    """Allow real local HTTP but reject accidental outbound provider requests."""
+    socket_allow_hosts(["127.0.0.1", "::1"], allow_unix_socket=True)
+
+
+@pytest.fixture
+async def linked(hass, provider_package, local_network, aiohttp_server, hass_client, monkeypatch):
     """Real HA entries, provider coordinator/OAuth session and inbound/outbound HTTP."""
     provider = provider_package
     constants = importlib.import_module("custom_components.ha_strava.const")

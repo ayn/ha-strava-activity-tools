@@ -6,7 +6,7 @@ with both integrations loaded through HA's config-entry lifecycle.
 
 ## What is covered
 
-Seven synthetic contract cases exercise:
+Eight synthetic contract cases exercise:
 
 - Actual HTTP challenge/POST handling, provider event emission and companion
   durable fetching through the real provider coordinator's OAuth session.
@@ -17,6 +17,7 @@ Seven synthetic contract cases exercise:
 - Preview defaults and a narrow, verified form write to a local fake Strava server.
 - Provider unload/reload: calls fail closed while unloaded and rebind to the new
   session afterward.
+- A loopback-only socket policy rejects accidental external network connections.
 
 Provider startup/background refresh data and subscription registration are
 substituted to avoid external Strava traffic. Provider setup, coordinator/OAuth
