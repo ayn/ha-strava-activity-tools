@@ -52,6 +52,7 @@ proof of API access or measured user demand.
 | [#14: Support previewable activity title and description templates](https://github.com/ayn/ha-strava-activity-tools/issues/14) | Format titles and annotations without AI or another rule language. |
 | [#15: Add optional historical weather fields and annotation formatting](https://github.com/ayn/ha-strava-activity-tools/issues/15) | Choose extra historical metrics, units and presentation. |
 | [#16: Recognize continuous tempo and progression workouts conservatively](https://github.com/ayn/ha-strava-activity-tools/issues/16) | Recognize supported quality sessions beyond explicit repeat intervals. |
+| [#24: Apply the matched workout title](https://github.com/ayn/ha-strava-activity-tools/issues/24) | Rename generic activity titles after a confident match, with manual-title protection. |
 
 ### Later and exploratory
 
