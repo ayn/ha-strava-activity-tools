@@ -9,7 +9,9 @@ Experimental, MIT-licensed Home Assistant companion for `ha_strava`.
 - Process uploads through the existing Strava webhook and OAuth connection, with
   durable AQI/UV retries and duplicate protection. No activity polling.
 
-Preview is enabled by default. Workout and track-shoe suggestions are read-only.
+Preview is enabled by default. Suggestion actions are read-only; an explicitly
+enabled native automation can apply their proposed tags and shoes through the
+update action with the returned state checks.
 This is an early community integration, not a default Marketplace listing.
 
 [Research](docs/RESEARCH.md) · [Architecture and delivery plan](docs/PLAN.md) ·
@@ -223,8 +225,10 @@ This is an explicit compatibility exception supported by Strautomator's public
 implementation but omitted from the current Strava update schema. Provider
 compatibility has been tested against a local HTTP server, not established by a
 new live tag mutation. Changing sport and subtype together is rejected. The
-preview lock and action-level dry-run default still apply. Calendar suggestions
-are never automatically passed to this write action.
+preview lock and action-level dry-run default still apply. The integration does
+not apply calendar suggestions automatically: the user must explicitly configure
+a native automation to pass its proposed changes and `expected` snapshot to the
+write action.
 
 ## Track shoes and reusable track detection
 
@@ -265,7 +269,11 @@ preserved; an already selected track shoe needs no change. Strava cannot tell us
 whether a default shoe was explicitly selected by the user, so that distinction
 must be considered before enabling automatic writes. Unavailable catalog data
 abstains for shoes independently of workout tagging. **Shoe and tag suggestions
-are read-only.** Gear retries and automatic assignment remain a separate gate.
+are read-only.** An explicit native automation can apply qualifying suggestions
+using `update_activity` and the `expected` snapshot. The snapshot checks preserve
+intervening changes to sport, label, gear and indoor/manual flags. The generic
+update action has no durable retry queue: native delays/repeats are automation
+configuration and pending attempts do not survive a Core restart.
 
 ## Development
 
