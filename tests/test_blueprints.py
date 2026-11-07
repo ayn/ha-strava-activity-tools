@@ -18,6 +18,7 @@ async def setup_blueprint(hass, name, inputs):
     target.mkdir(parents=True, exist_ok=True)
     (target / source.name).write_text(source.read_text())
     await async_setup(hass, {})
+    hass.config.components.add(DOMAIN)
     hass.data["ha_strava"] = {"source": SimpleNamespace(oauth_session=AsyncMock())}
     entry = MockConfigEntry(
         domain=DOMAIN,
@@ -27,7 +28,8 @@ async def setup_blueprint(hass, name, inputs):
         options={"preview_only": False},
     )
     entry.add_to_hass(hass)
-    await async_setup_entry(hass, entry)
+    async with entry.setup_lock:
+        await async_setup_entry(hass, entry)
     assert await async_setup_component(
         hass,
         "automation",

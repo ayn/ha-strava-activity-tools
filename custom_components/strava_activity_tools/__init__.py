@@ -7,6 +7,7 @@ from typing import Any
 
 import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import Platform
 from homeassistant.core import Event, HomeAssistant, ServiceCall, SupportsResponse, callback
 from homeassistant.exceptions import ConfigEntryNotReady, HomeAssistantError
 from homeassistant.helpers import config_validation as cv
@@ -18,6 +19,7 @@ from .core import METERS_PER_MILE, match_activity, nonnegative
 from .enrichment import enrich_description
 from .environment import environment_eligible, missing_environment
 from .history import async_readings
+from .journal import RunJournal, journal_store
 from .session import HASession
 from .tracks import track_evidence
 from .weather import CREDIT, async_weather_readings
@@ -25,6 +27,7 @@ from .worker import JobWorker, job_store
 from .workouts import calendar_window, suggest_track_shoes, suggest_workout
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
+PLATFORMS = [Platform.SENSOR]
 FILTER_SCHEMA = vol.Schema(
     {
         vol.Optional("name_contains"): str,
@@ -44,6 +47,7 @@ class Runtime:
     client: ActivityClient
     source_entry_id: str
     worker: JobWorker | None = None
+    journal: RunJournal | None = None
 
 
 def activity_fields(activity: dict[str, Any]) -> dict[str, Any]:
@@ -83,7 +87,7 @@ async def async_setup(hass: HomeAssistant, config: dict[str, Any]) -> bool:
     hass.data.setdefault(DOMAIN, {})
     common = {vol.Required("config_entry_id"): str, vol.Required("activity_id"): cv.string}
 
-    async def handle(call: ServiceCall) -> dict[str, Any]:
+    async def execute_action(call: ServiceCall) -> dict[str, Any]:
         runtime = hass.data[DOMAIN].get(call.data["config_entry_id"])
         if runtime is None:
             raise HomeAssistantError("source_not_loaded")
@@ -195,6 +199,55 @@ async def async_setup(hass: HomeAssistant, config: dict[str, Any]) -> bool:
         except ActivityError as err:
             raise HomeAssistantError(err.category) from None
 
+    async def handle(call: ServiceCall) -> dict[str, Any]:
+        runtime = hass.data[DOMAIN].get(call.data["config_entry_id"])
+        entry = hass.config_entries.async_get_entry(call.data["config_entry_id"])
+        preview = (
+            entry is None
+            or entry.options.get("preview_only", True)
+            or call.data.get("dry_run", True)
+            or call.service in ("match_activity", "detect_track", "suggest_workout")
+        )
+        record = (
+            runtime is not None
+            and runtime.journal is not None
+            and call.service
+            in (
+                "match_activity",
+                "detect_track",
+                "suggest_workout",
+                "update_activity",
+                "append_environment",
+            )
+        )
+        try:
+            result = await execute_action(call)
+        except HomeAssistantError as err:
+            # A rejected foreign-owner response must never expose that activity in history.
+            if record and str(err) != "wrong_athlete":
+                runtime.journal.record(
+                    call.service,
+                    call.data["activity_id"],
+                    preview,
+                    {
+                        "status": "failed",
+                        "error": str(err),
+                    },
+                )
+            raise
+        if record and (call.service != "append_environment" or preview):
+            if call.service == "detect_track":
+                result_for_history = {
+                    **result,
+                    "status": "track" if result["on_track"] else "not_track",
+                }
+            else:
+                result_for_history = result
+            runtime.journal.record(
+                call.service, call.data["activity_id"], preview, result_for_history
+            )
+        return result
+
     for name, extra in {
         "get_activity": {},
         "detect_track": {},
@@ -301,6 +354,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         ActivityClient(HASession(coordinator.oauth_session), entry.data["athlete_id"]), source_id
     )
     hass.data[DOMAIN][entry.entry_id] = runtime
+    runtime.journal = RunJournal(hass, entry)
+    await runtime.journal.load()
 
     async def execute(job: dict) -> dict:
         if (
@@ -320,7 +375,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         )
         return {"status": "delivered"}
 
-    runtime.worker = JobWorker(hass, entry, execute)
+    runtime.worker = JobWorker(hass, entry, execute, runtime.journal)
     try:
         if "legacy_entry_id" in entry.data:
             from .migration import migrate_legacy_receipts
@@ -363,11 +418,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         entry.async_create_background_task(hass, enqueue(activity_id), f"{DOMAIN}_enqueue")
 
     entry.async_on_unload(hass.bus.async_listen(SOURCE_EVENT, receive))
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """HA cancels entry background tasks and registered listeners on unload."""
+    if not await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
+        return False
     runtime = hass.data[DOMAIN].pop(entry.entry_id, None)
     if runtime and runtime.worker:
         await runtime.worker.close()
@@ -377,3 +435,4 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Remove private pending intents and receipts when their account is removed."""
     await job_store(hass, entry.entry_id).async_remove()
+    await journal_store(hass, entry.entry_id).async_remove()

@@ -136,10 +136,42 @@ Do not enable this enrichment alongside another writer doing the same job until
 a dry run confirms the intended handoff. Existing cloud workers and rules need
 not be removed for local development.
 
+## Previews and processing history (next release)
+
+Each account has **Latest preview** and **Latest run** sensors under
+**Settings → Devices & services → Strava Activity Tools → Devices**. They update
+from actions and webhook processing, without activity polling. Select either
+sensor to see the latest result and its `recent` list, or use **Add to dashboard**
+for a native tile. This is included in the unreleased 0.6.2 code, not v0.6.1.
+
+For a readable list with activity links, proposed/completed changes, AQI/UV,
+matching reasons and retry/error details, add a native **Manual** dashboard card
+using [examples/history-card.yaml](examples/history-card.yaml). It discovers the
+integration's history entities, so no account or entity IDs need editing. No
+custom frontend card is required. Multiple accounts are shown separately.
+
+Preview and processing streams each retain up to 25 operation results for seven
+days, persist across normal restarts, and are deleted when the account is removed.
+This is operation history: several rules can produce several entries for one
+Strava activity. A rule match or workout suggestion does not mean a change was
+written. Preview results, actual writes, no-ops, ineligible skips and retries
+have distinct statuses. Read-only matching and track detection appear in previews
+even when writes are enabled. Ordinary `get_activity` reads are not recorded.
+
+History starts with this version; old job receipts are not backfilled. It stores
+selected result metadata, not activity titles, descriptions, GPS routes or tokens.
+Title/description edits are shown as `changed`; gear uses the Strava gear ID.
+Like other HA entity states, these results are visible to users who can access
+those entities. The sliding list is excluded from Recorder to avoid duplicating
+the full list on every update; individual entity states follow your Recorder
+retention. Display history is separate from durable job receipts and never
+replays work. Dashboard failures do not authorize retries of successful writes.
+
 ## Actions and events
 
 Actions accept the **Strava Activity Tools configuration entry ID**, not the source
-Strava entry ID, plus an activity ID. Responses are available in automation traces.
+Strava entry ID, plus an activity ID. Full responses remain available in automation
+traces; the history entities expose selected summaries.
 
 - `strava_activity_tools.get_activity`: fetch selected condition fields by ID.
 - `strava_activity_tools.match_activity`: evaluate filters without writing.

@@ -18,6 +18,7 @@ from homeassistant.util import dt as dt_util
 from .client import ActivityError
 from .const import DOMAIN, ERROR_EVENT
 from .jobs import DurableJobs
+from .journal import RunJournal
 
 RECOVERED_EVENT = "strava_activity_tools_recovered"
 
@@ -46,9 +47,26 @@ class JobWorker:
     """Only scheduled pending jobs cause API requests. No activity polling."""
 
     def __init__(
-        self, hass: HomeAssistant, entry: ConfigEntry, execute: Callable[[dict], Awaitable[dict]]
+        self,
+        hass: HomeAssistant,
+        entry: ConfigEntry,
+        execute: Callable[[dict], Awaitable[dict]],
+        journal: RunJournal | None = None,
     ) -> None:
         self.hass, self.entry = hass, entry
+        self.journal = journal
+
+        async def execute_observed(job: dict) -> dict:
+            result = await execute(job)
+            if self.journal:
+                self.journal.record(
+                    "append_environment" if job["kind"] == "environment" else "fetch",
+                    job["activity_id"],
+                    job["parameters"].get("dry_run", False),
+                    result,
+                )
+            return result
+
         self.queue = DurableJobs(
             ScopedStore(
                 job_store(hass, entry.entry_id),
@@ -57,7 +75,7 @@ class JobWorker:
                     "athlete_id": str(entry.data["athlete_id"]),
                 },
             ),
-            execute,
+            execute_observed if journal is not None else execute,
             self._notify,
             lambda: dt_util.utcnow().timestamp(),
         )
@@ -137,11 +155,30 @@ class JobWorker:
             self.entry.async_create_background_task(self.hass, self.process(), f"{DOMAIN}_retry")
 
     async def _drain(self) -> None:
+        before = {key: (job["status"], job["attempt"]) for key, job in self.queue.jobs.items()}
         try:
             await self.queue.run_due()
         except OSError, ActivityError:
             self._storage_error()
         finally:
+            if self.journal:
+                for key, job in self.queue.jobs.items():
+                    if (
+                        job["status"] in ("queued", "failed")
+                        and before.get(key) != (job["status"], job["attempt"])
+                        and job["last_error"] != "wrong_athlete"
+                    ):
+                        self.journal.record(
+                            "append_environment" if job["kind"] == "environment" else "fetch",
+                            job["activity_id"],
+                            False,
+                            {
+                                "status": job["status"],
+                                "attempt": job["attempt"],
+                                "error": job["last_error"],
+                                "next_retry": job["next_retry"],
+                            },
+                        )
             self.arm()
 
     @callback
@@ -219,3 +256,5 @@ class JobWorker:
         if self._task and not self._task.done():
             self._task.cancel()
             await asyncio.gather(self._task, return_exceptions=True)
+        if self.journal:
+            await self.journal.close()
