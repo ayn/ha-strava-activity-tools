@@ -1,0 +1,162 @@
+{
+  "title": "Strava Activity Tools",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect an existing Strava integration",
+        "description": "Select a loaded ha_strava account. Its OAuth session and activity-created event are reused. No second login or webhook subscription is created. For legacy entries, find the numeric athlete ID on your Strava profile.",
+        "data": {
+          "source_entry_id": "Strava configuration entry",
+          "athlete_id": "Strava athlete ID",
+          "legacy_entry_id": "Migrate completed receipts from disabled Activity Tools (optional)"
+        }
+      }
+    },
+    "error": {
+      "source_not_loaded": "Load the selected Strava integration first.",
+      "invalid_athlete": "Enter the numeric Strava athlete ID.",
+      "wrong_athlete": "This ID does not match the selected Strava account.",
+      "legacy_unavailable": "Disable the old Activity Tools entry and select the same Strava account."
+    },
+    "abort": {
+      "source_not_loaded": "Install and configure ha_strava first. The activity-created event patch is also required.",
+      "already_configured": "Strava Activity Tools is already configured for this athlete."
+    }
+  },
+  "services": {
+    "get_activity": {
+      "name": "Get activity",
+      "description": "Fetch matching fields for one activity owned by this account.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Strava Activity Tools account"
+        },
+        "activity_id": {
+          "name": "Activity ID"
+        }
+      }
+    },
+    "match_activity": {
+      "name": "Match activity",
+      "description": "Preview title, device, sport, and distance filters without writing.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Strava Activity Tools account"
+        },
+        "activity_id": {
+          "name": "Activity ID"
+        },
+        "filters": {
+          "name": "Selected filters"
+        }
+      }
+    },
+    "update_activity": {
+      "name": "Update activity",
+      "description": "Preview or update allowlisted Strava fields, including workout_type compatibility support; preview is the default.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Strava Activity Tools account"
+        },
+        "activity_id": {
+          "name": "Activity ID"
+        },
+        "changes": {
+          "name": "Changes"
+        },
+        "dry_run": {
+          "name": "Preview only"
+        }
+      }
+    },
+    "append_environment": {
+      "name": "Append historical AQI and UV",
+      "description": "Preview historical AQI/UV, or durably enqueue an idempotent append. Actual writes return a job ID and status; preview creates no pending write.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Strava Activity Tools account"
+        },
+        "activity_id": {
+          "name": "Activity ID"
+        },
+        "aqi_entity": {
+          "name": "US EPA AQI sensor"
+        },
+        "uv_entity": {
+          "name": "UV index sensor"
+        },
+        "radius_km": {
+          "name": "Weather coverage radius from home"
+        },
+        "dry_run": {
+          "name": "Preview only"
+        }
+      }
+    },
+    "list_jobs": {
+      "name": "List jobs",
+      "description": "Inspect this account\u2019s durable jobs, retry times, and safe error categories. No Strava request is made.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Strava Activity Tools account"
+        }
+      }
+    },
+    "replay_job": {
+      "name": "Replay job",
+      "description": "Replay a failed job after fixing its cause. Uses the original account/settings and rechecks remote state before a write.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Strava Activity Tools account"
+        },
+        "job_id": {
+          "name": "Job ID"
+        }
+      }
+    },
+    "suggest_workout": {
+      "name": "Suggest workout tag from calendar",
+      "description": "Read-only interval matching using the selected training calendar and recorded fast/recovery laps. Returns a reason; never writes a tag.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Strava Activity Tools account"
+        },
+        "activity_id": {
+          "name": "Activity ID"
+        },
+        "calendar_entity": {
+          "name": "Training calendar"
+        }
+      }
+    },
+    "detect_track": {
+      "name": "Detect likely track run",
+      "description": "Read-only, bounded GPS geometry detection for native automations. A heuristic, not Garmin track-mode metadata. No calendar or shoes required.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Strava Activity Tools account"
+        },
+        "activity_id": {
+          "name": "Activity ID"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Strava Activity Tools settings",
+        "description": "Choose track shoes from this Strava account. Updating the pair takes effect immediately for previews. Preview only blocks Strava writes; calendar and track-shoe suggestions always remain read-only. {shoe_catalog_status}",
+        "data": {
+          "preview_only": "Preview only (block all Strava writes)",
+          "track_shoes": "Track shoes",
+          "reauthorize_strava": "Request Strava reauthorization (profile and activity editing)"
+        }
+      }
+    },
+    "error": {
+      "shoe_catalog_unavailable": "Could not load your Strava shoes. Existing choices are kept; retry when the Strava account is available.",
+      "invalid_shoes": "Choose an active shoe from this Strava account."
+    }
+  }
+}

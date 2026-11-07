@@ -1,0 +1,98 @@
+blueprint:
+  name: Strava Activity Tools - assign gear to matching activities
+  description: >-
+    Choose shoes or a bike by Strava gear ID. All selected filters combine with AND.
+    Preview is enabled by default. An empty sport list matches any sport.
+  domain: automation
+  homeassistant:
+    min_version: 2026.10.4
+  input:
+    config_entry_id:
+      name: Strava Activity Tools account
+      selector:
+        config_entry:
+          integration: strava_activity_tools
+    name_contains:
+      name: Title contains (case insensitive)
+      default: ""
+      selector:
+        text:
+    name_exact:
+      name: Title is exactly (case sensitive)
+      default: ""
+      selector:
+        text:
+    device_contains:
+      name: Device contains (case insensitive)
+      default: ""
+      selector:
+        text:
+    device_exact:
+      name: Device is exactly (case sensitive)
+      default: ""
+      selector:
+        text:
+    sport_types:
+      name: Sports (empty means any)
+      default: []
+      selector:
+        select:
+          multiple: true
+          custom_value: true
+          options: [Run, TrailRun, VirtualRun, Ride, VirtualRide, MountainBikeRide, Walk, Hike, Workout, Yoga, Swim]
+    distance_below_miles:
+      name: Distance below miles (0 disables the distance filter)
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 200
+          step: 0.1
+          unit_of_measurement: mi
+          mode: box
+    dry_run:
+      name: Preview only
+      description: Leave enabled until the automation trace shows the changes you expect.
+      default: true
+      selector:
+        boolean:
+    gear_id:
+      name: Gear ID
+      description: A Strava bike ID (b123), shoe ID (g123), or none to clear.
+      selector:
+        text:
+variables:
+  title_contains: !input name_contains
+  title_exact: !input name_exact
+  source_contains: !input device_contains
+  source_exact: !input device_exact
+  sports: !input sport_types
+  max_miles: !input distance_below_miles
+triggers:
+  - trigger: event
+    event_type: strava_activity_tools_activity_ready
+    event_data:
+      config_entry_id: !input config_entry_id
+actions:
+  - action: strava_activity_tools.match_activity
+    data:
+      config_entry_id: !input config_entry_id
+      activity_id: "{{ trigger.event.data.activity_id }}"
+      filters: >-
+        {{ dict(name_contains=title_contains, name_exact=title_exact,
+                device_contains=source_contains, device_exact=source_exact,
+                sport_types=sports) | combine(
+                dict(distance_below_miles=max_miles) if max_miles > 0 else {}) }}
+    response_variable: match_result
+  - condition: template
+    value_template: "{{ match_result.matches }}"
+  - action: strava_activity_tools.update_activity
+    data:
+      config_entry_id: !input config_entry_id
+      activity_id: "{{ trigger.event.data.activity_id }}"
+      changes:
+        gear_id: !input gear_id
+      dry_run: !input dry_run
+    response_variable: update_result
+mode: queued
+max: 25

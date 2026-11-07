@@ -1,0 +1,98 @@
+blueprint:
+  name: Strava Activity Tools - append historical AQI and UV
+  description: >-
+    Append worldwide US EPA AQI and UV for the outdoor run's start location and UTC hour.
+    Uses Open-Meteo/CAMS estimates without needing HA sensors or a home zone.
+    Optionally select HA sensor history for local runs. No current-state fallback.
+    Existing notes and annotations are preserved. Preview is enabled by default.
+  domain: automation
+  homeassistant:
+    min_version: 2026.10.4
+  input:
+    config_entry_id:
+      name: Strava Activity Tools account
+      selector:
+        config_entry:
+          integration: strava_activity_tools
+    weather_source:
+      name: Weather source
+      description: Automatic uses the location API unless HA history sensors are selected. The US EPA AQI scale works worldwide.
+      default: auto
+      selector:
+        select:
+          options:
+            - value: auto
+              label: Automatic
+            - value: location_api
+              label: Location API everywhere
+            - value: ha_history
+              label: HA sensor history
+    aqi_entity:
+      name: AQI sensor (HA history only)
+      default: ""
+      description: Must report the US EPA AQI index, not PM2.5 concentration or another national index.
+      selector:
+        entity:
+          domain: sensor
+    uv_entity:
+      name: UV sensor (HA history only)
+      default: ""
+      selector:
+        entity:
+          domain: sensor
+    radius_km:
+      name: Weather coverage radius from home
+      default: 15
+      selector:
+        number:
+          min: 0
+          max: 100
+          step: 1
+          unit_of_measurement: km
+          mode: box
+    dry_run:
+      name: Preview only
+      default: true
+      selector:
+        boolean:
+    external_fallback:
+      name: Use historical API fallback
+      description: Send rounded start coordinates and UTC hour to Open-Meteo for away runs or missing local readings. Personal non-commercial API use only; API-derived annotations include attribution.
+      default: false
+      selector:
+        boolean:
+triggers:
+  - trigger: event
+    event_type: strava_activity_tools_activity_ready
+    event_data:
+      config_entry_id: !input config_entry_id
+variables:
+  weather_source: !input weather_source
+  aqi_entity: !input aqi_entity
+  uv_entity: !input uv_entity
+actions:
+  - if:
+      - condition: template
+        value_template: "{{ weather_source == 'location_api' or (weather_source == 'auto' and not aqi_entity and not uv_entity) }}"
+    then:
+      - action: strava_activity_tools.append_environment
+        data:
+          config_entry_id: !input config_entry_id
+          activity_id: "{{ trigger.event.data.activity_id }}"
+          weather_source: location_api
+          dry_run: !input dry_run
+        response_variable: environment_result
+    else:
+      - action: strava_activity_tools.append_environment
+        data:
+          config_entry_id: !input config_entry_id
+          activity_id: "{{ trigger.event.data.activity_id }}"
+          weather_source: ha_history
+          aqi_entity: !input aqi_entity
+          uv_entity: !input uv_entity
+          radius_km: !input radius_km
+          dry_run: !input dry_run
+          external_fallback: !input external_fallback
+        response_variable: environment_result
+mode: queued
+max: 25
