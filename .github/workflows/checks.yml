@@ -1,0 +1,46 @@
+name: Checks
+
+on:
+  pull_request:
+    paths:
+      - custom_components/**
+      - blueprints/**
+      - tests/**
+      - requirements-dev.txt
+      - pyproject.toml
+      - hacs.json
+      - .github/workflows/checks.yml
+  push:
+    branches-ignore: [main]
+    paths:
+      - custom_components/**
+      - blueprints/**
+      - tests/**
+      - requirements-dev.txt
+      - pyproject.toml
+      - hacs.json
+      - .github/workflows/checks.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.14'
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+      - run: python -m pip install -r requirements-dev.txt
+      - run: ruff check .
+      - run: ruff format --check .
+      - run: python -m pytest --cov=custom_components.strava_activity_tools --cov-report=term-missing --cov-fail-under=90

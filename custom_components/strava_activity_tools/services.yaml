@@ -1,0 +1,275 @@
+{
+  "get_activity": {
+    "name": "Get activity",
+    "description": "Fetch matching fields for one activity owned by this account.",
+    "fields": {
+      "config_entry_id": {
+        "name": "Strava Activity Tools account",
+        "required": true,
+        "selector": {
+          "config_entry": {
+            "integration": "strava_activity_tools"
+          }
+        }
+      },
+      "activity_id": {
+        "name": "Activity ID",
+        "required": true,
+        "example": "123456",
+        "selector": {
+          "text": {}
+        }
+      }
+    }
+  },
+  "match_activity": {
+    "name": "Match activity",
+    "description": "Preview title, device, sport, and distance filters without writing.",
+    "fields": {
+      "config_entry_id": {
+        "name": "Strava Activity Tools account",
+        "required": true,
+        "selector": {
+          "config_entry": {
+            "integration": "strava_activity_tools"
+          }
+        }
+      },
+      "activity_id": {
+        "name": "Activity ID",
+        "required": true,
+        "example": "123456",
+        "selector": {
+          "text": {}
+        }
+      },
+      "filters": {
+        "name": "Selected filters",
+        "default": {},
+        "selector": {
+          "object": {}
+        }
+      }
+    }
+  },
+  "update_activity": {
+    "name": "Update activity",
+    "description": "Preview or update allowlisted Strava fields, including workout_type compatibility support; preview is the default.",
+    "fields": {
+      "config_entry_id": {
+        "name": "Strava Activity Tools account",
+        "required": true,
+        "selector": {
+          "config_entry": {
+            "integration": "strava_activity_tools"
+          }
+        }
+      },
+      "activity_id": {
+        "name": "Activity ID",
+        "required": true,
+        "example": "123456",
+        "selector": {
+          "text": {}
+        }
+      },
+      "changes": {
+        "name": "Changes",
+        "required": true,
+        "example": {
+          "hide_from_home": true
+        },
+        "selector": {
+          "object": {}
+        }
+      },
+      "dry_run": {
+        "name": "Preview only",
+        "default": true,
+        "selector": {
+          "boolean": {}
+        }
+      }
+    }
+  },
+  "append_environment": {
+    "name": "Append historical AQI and UV",
+    "description": "Append historical US EPA AQI and UV worldwide from the run start location, using Open-Meteo/CAMS estimates. HA sensor history is optional. Preview is the default; durable retries preserve notes and source credit.",
+    "fields": {
+      "config_entry_id": {
+        "name": "Strava Activity Tools account",
+        "required": true,
+        "selector": {
+          "config_entry": {
+            "integration": "strava_activity_tools"
+          }
+        }
+      },
+      "activity_id": {
+        "name": "Activity ID",
+        "required": true,
+        "example": "123456",
+        "selector": {
+          "text": {}
+        }
+      },
+      "weather_source": {
+        "name": "Weather source",
+        "description": "Location API provides worldwide US EPA AQI and UV without HA sensors or a home zone. Existing calls with sensors retain HA history behavior.",
+        "default": "location_api",
+        "selector": {
+          "select": {
+            "options": [
+              {
+                "value": "location_api",
+                "label": "Location API everywhere"
+              },
+              {
+                "value": "ha_history",
+                "label": "HA sensor history"
+              }
+            ]
+          }
+        }
+      },
+      "aqi_entity": {
+        "name": "AQI sensor (HA history only)",
+        "required": false,
+        "selector": {
+          "entity": {
+            "domain": "sensor"
+          }
+        }
+      },
+      "uv_entity": {
+        "name": "UV sensor (HA history only)",
+        "required": false,
+        "selector": {
+          "entity": {
+            "domain": "sensor"
+          }
+        }
+      },
+      "radius_km": {
+        "name": "Weather coverage radius from home",
+        "default": 15,
+        "selector": {
+          "number": {
+            "min": 0,
+            "max": 100,
+            "unit_of_measurement": "km",
+            "mode": "box"
+          }
+        },
+        "description": "Only used with HA sensor history; location API mode has no home-area restriction."
+      },
+      "external_fallback": {
+        "name": "Use historical API fallback",
+        "description": "Send rounded start coordinates and the UTC hour to Open-Meteo. API-derived annotations include source credit; disabled by default.",
+        "default": false,
+        "selector": {
+          "boolean": {}
+        }
+      },
+      "dry_run": {
+        "name": "Preview only",
+        "default": true,
+        "selector": {
+          "boolean": {}
+        }
+      }
+    }
+  },
+  "list_jobs": {
+    "name": "List jobs",
+    "description": "Inspect this account\u2019s durable jobs, retry times, and safe error categories. No Strava request is made.",
+    "fields": {
+      "config_entry_id": {
+        "name": "Strava Activity Tools account",
+        "required": true,
+        "selector": {
+          "config_entry": {
+            "integration": "strava_activity_tools"
+          }
+        }
+      }
+    }
+  },
+  "replay_job": {
+    "name": "Replay job",
+    "description": "Replay a failed job after fixing its cause. Uses the original account/settings and rechecks remote state before a write.",
+    "fields": {
+      "config_entry_id": {
+        "name": "Strava Activity Tools account",
+        "required": true,
+        "selector": {
+          "config_entry": {
+            "integration": "strava_activity_tools"
+          }
+        }
+      },
+      "job_id": {
+        "name": "Job ID",
+        "required": true,
+        "selector": {
+          "text": {}
+        }
+      }
+    }
+  },
+  "suggest_workout": {
+    "name": "Suggest workout tag from calendar",
+    "description": "Read-only interval matching using the selected training calendar and recorded fast/recovery laps. Returns a reason; never writes a tag.",
+    "fields": {
+      "config_entry_id": {
+        "name": "Strava Activity Tools account",
+        "required": true,
+        "selector": {
+          "config_entry": {
+            "integration": "strava_activity_tools"
+          }
+        }
+      },
+      "activity_id": {
+        "name": "Activity ID",
+        "required": true,
+        "example": "123456",
+        "selector": {
+          "text": {}
+        }
+      },
+      "calendar_entity": {
+        "name": "Training calendar",
+        "required": true,
+        "selector": {
+          "entity": {
+            "domain": "calendar"
+          }
+        }
+      }
+    }
+  },
+  "detect_track": {
+    "name": "Detect likely track run",
+    "description": "Read-only, bounded GPS geometry detection for native automations. A heuristic, not Garmin track-mode metadata. No calendar or shoes required.",
+    "fields": {
+      "config_entry_id": {
+        "name": "Strava Activity Tools account",
+        "required": true,
+        "selector": {
+          "config_entry": {
+            "integration": "strava_activity_tools"
+          }
+        }
+      },
+      "activity_id": {
+        "name": "Activity ID",
+        "required": true,
+        "example": "123456",
+        "selector": {
+          "text": {}
+        }
+      }
+    }
+  }
+}

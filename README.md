@@ -1,3 +1,276 @@
 # Strava Activity Tools
 
-Home Assistant companion for Strava activity automations.
+Experimental, MIT-licensed Home Assistant companion for `ha_strava`.
+
+- Add historical US EPA AQI and UV at an outdoor run’s start location worldwide,
+  or use optional HA sensor history.
+- Build native automations for feed mute, gear assignment and description edits.
+- Preview calendar-assisted workout tags and GPS-based track-shoe suggestions.
+- Process uploads through the existing Strava webhook and OAuth connection, with
+  durable AQI/UV retries and duplicate protection. No activity polling.
+
+Preview is enabled by default. Workout and track-shoe suggestions are read-only.
+This is an early community integration, not a default Marketplace listing.
+
+[Research](docs/RESEARCH.md) · [Architecture and delivery plan](docs/PLAN.md) ·
+[TDD evidence and validation](docs/VALIDATION.md)
+
+## What the prototype does
+
+Three blueprints run through HA's native automation engine:
+
+| Blueprint | Conditions / action |
+| --- | --- |
+| [Mute activity](blueprints/automation/mute_activity.yaml) | Title/device exact or contains, sports, distance; hide from home feed |
+| [Assign gear](blueprints/automation/assign_gear.yaml) | Same filters; assign shoes or bike, or clear gear |
+| [Append environment](blueprints/automation/append_environment.yaml) | Outdoor GPS run worldwide; append historical AQI and UV |
+
+**Preview is enabled by default**, independently for every automation. An additional
+integration-wide **Preview only** option defaults to enabled and prevents writes
+even when an action requests them. Both gates must allow writes before a mutation
+is possible. Check preview results before considering a cutover. Mute uses `hide_from_home`;
+it does not make an activity private, remove it, or exclude it from statistics.
+
+Filters combine with AND. Use multiple automations for OR alternatives.
+The mute blueprint requires at least one filter; empty filters do not mute everything.
+Title/device contains is case insensitive; exact matching is case sensitive.
+A missing device or distance does not match a filter requiring that field.
+
+Example mute configurations, all without private athlete data:
+
+| Rule | Blueprint inputs |
+| --- | --- |
+| Tractive walks | Title contains `My Tractive dog walk` |
+| Fi walks | Device exactly `Fi Smart Collar` |
+| Peloton pre-run stretch | Device contains `Peloton`; title contains `pre-run stretch` |
+| Peloton post-run stretch | Device contains `Peloton`; title contains `post-run stretch` |
+| Short warm-up/cooldown runs | Sports `Run`, `TrailRun`; distance below **2.1 miles** |
+
+The short-run cutoff is strict: a run exactly 2.1 miles is not muted. This is a
+heuristic, not a determination of workout role. Review class title wording and
+existing rules before migration. Do not mute every Peloton `Workout`: that also
+includes strength and other sessions.
+
+## Installation and prerequisites
+
+- HA **2026.10.4**, the tested baseline; Python 3.14 for development.
+- A configured, loaded `ha_strava` account.
+- The activity-created event from upstream [PR #349](https://github.com/craibo/ha_strava/pull/349),
+  or a version containing that feature. This dependency is not yet assumed merged.
+- Existing Strava OAuth consent with `activity:write` for actual writes;
+  `activity:read_all` when processing private activities. Reauthorize through the
+  OAuth owner if scopes are missing. This companion does not grant missing scopes.
+- HA recorder history only if selecting HA sensor history. Location API mode needs no HA weather sensors or home zone.
+
+Add `https://github.com/ayn/ha-strava-activity-tools` as a custom Integration
+repository in HACS (Marketplace on newer HA versions), then download and restart
+HA. This does not imply listing or approval in the default catalog.
+
+For a manual installation, copy `custom_components/strava_activity_tools` into
+HA’s `custom_components` folder and restart. Add **Strava Activity Tools** in
+Settings → Devices & Services, select the loaded Strava entry, and enter the
+numeric athlete ID. Never copy an OAuth refresh token into this integration.
+
+Copy desired files from `blueprints/automation/` to
+`blueprints/automation/strava_activity_tools/` and create an automation from the
+Blueprints page. Start in preview mode. Existing users of the earlier
+`activity_tools` prototype should follow [the migration guide](docs/MIGRATION.md).
+
+Do not enable this enrichment alongside another writer doing the same job until
+a dry run confirms the intended handoff. Existing cloud workers and rules need
+not be removed for local development.
+
+## Actions and events
+
+Actions accept the **Strava Activity Tools configuration entry ID**, not the source
+Strava entry ID, plus an activity ID. Responses are available in automation traces.
+
+- `strava_activity_tools.get_activity`: fetch selected condition fields by ID.
+- `strava_activity_tools.match_activity`: evaluate filters without writing.
+- `strava_activity_tools.update_activity`: preview or update explicit documented fields.
+- `strava_activity_tools.append_environment`: preview, or durably enqueue a historical append.
+- `strava_activity_tools.list_jobs`: inspect jobs and retry/error status without an API request.
+- `strava_activity_tools.replay_job`: replay a failed, unexpired job after fixing its cause.
+
+Update fields: `name`, `description`, `sport_type`, `gear_id`, `hide_from_home`,
+`trainer`, `commute`. Unsupported/private API fields are rejected. Gear IDs use
+`b…` for bikes and `g…` for shoes; `none` clears gear. A gear picker is planned.
+
+The bridge consumes `ha_strava_activity_created` and emits
+`strava_activity_tools_activity_ready` with account/activity IDs, title, device, sport,
+distance in meters/miles, start date, and trainer/manual flags. It does not emit
+routes, photos, descriptions, or tokens. `strava_activity_tools_error` contains a stable
+error category and IDs for repair, not the raw API response.
+
+## AQI/UV behavior
+
+- Use a **US EPA AQI index** sensor, not PM2.5 concentration or a different national index.
+- Select the UV index sensor separately. Units are not guessed or converted.
+- Read the recorder snapshot at the activity's timezone-aware UTC start.
+- Delayed uploads work while sensor history is available, up to seven days here.
+- Require an outdoor, non-manual `Run`/`TrailRun` with valid GPS.
+- Location-based mode (`weather_source: location_api`) gets historical hourly
+  US EPA AQI and cloudy-sky UV from Open-Meteo/CAMS at the run's start location.
+  Coverage is global, including Taiwan; US EPA names the index scale, not the
+  coverage area. No HA sensors, home zone or recorder are required.
+- New action calls without sensor settings, and new blueprint instances without
+  selected sensors, use location-based mode. An explicit location mode uses the
+  API at home as well as while traveling.
+- HA sensor history is optional (`weather_source: ha_history`). In that mode,
+  prefer local history within the home radius, with optional `external_fallback`
+  for away runs or missing readings. Existing sensor-based calls retain this
+  behavior and their original saved-job identities.
+- Unknown/missing readings never become zero. Actual UV zero is valid.
+- Append missing lines only; preserve existing notes and existing AQI/UV lines.
+- Use familiar AQI/UV color bands, with an explicit hazardous label above AQI 300.
+- The API uses the UTC hour containing the run start, never today's current values
+  or a daily UV maximum. Estimates can differ from monitoring stations; CAMS global
+  spatial resolution is roughly 45 km, versus roughly 11 km in Europe.
+- Only rounded start coordinates (two decimals) and the selected hour are sent.
+  No Strava credentials, activity ID, title or route leave HA for the weather API.
+  API-derived additions include an Open-Meteo/CAMS credit. Data uses
+  [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/); see the
+  [provider documentation](https://open-meteo.com/en/docs/air-quality-api).
+  Personal non-commercial access needs no API key; commercial use requires a
+  [provider plan](https://open-meteo.com/en/pricing).
+- API failures enter the existing durable retry flow. They do not block unrelated
+  Strava fetch jobs. Fully annotated activities make no external weather request.
+- No external weather service is required when using only local HA history.
+  No AI or Cloudflare Worker is needed for either path.
+
+## Reliability and privacy
+
+There is no scheduled Strava polling, second webhook subscription, token store,
+or persistent activity database. API requests use the existing OAuth session.
+Edits are serialized per athlete, owner checked, re-read immediately before a
+write, and verified afterward. This narrows the edit race; Strava provides no
+atomic conditional write here, so a last-moment external edit remains possible.
+
+Jobs and completed receipts now survive HA restarts through the native private,
+atomic `Store` helper. Only IDs, account scope, sensor/settings references, timing,
+attempts, and safe error categories are persisted. No activity bodies or credentials
+are stored in the queue. Records expire after seven days and are bounded to 1,024
+per account. Changed parameters create a separate intent; previews never enqueue writes.
+
+For actual AQI/UV writes, the action returns `job_id` and a status such as `queued`,
+`done`, `failed`, or `skipped`. Use **Developer Tools → Actions → Strava Activity Tools:
+List jobs** to inspect the selected account, and **Replay job** with its job ID
+when a failed job's cause has been fixed. Replays retain the original account,
+settings and expiration deadline. Queued, running, completed, and expired jobs
+cannot be manually replayed as failed work.
+
+Five attempts use 1-minute, 5-minute, 30-minute and 2-hour backoffs. Rate-limit
+Retry-After also delays other jobs in the same worker and survives a restart.
+One-shot timers process only existing jobs or retention cleanup; there is no
+scheduled activity discovery or API polling. Writes always re-fetch remote state,
+so an append that took effect before a timeout is not blindly repeated.
+
+Permanent failures notify immediately; transient incidents notify after the third
+failure. HA persistent notifications deduplicate by account/job and are restored
+on reload. Successful verification clears the incident and emits
+`strava_activity_tools_recovered`. Expired or ineligible work clears the stale warning
+without claiming verified recovery. Optional external notification automations
+can consume the events; no email/mobile destination is enabled by this project.
+Storage failure stops the worker and prompts inspection/reload, rather than
+resetting receipts. Account changes and malformed saved jobs fail closed.
+
+These guarantees start after job intent is committed. Webhooks missed while HA
+is down, and a crash before an internal event reaches the durable queue, are not
+recovered by polling. Delivery of a ready event is at least once across an
+interrupted attempt; downstream automations must remain idempotent. The generic
+mute/gear/update actions are not automatically turned into durable jobs by this
+release; only event preparation and AQI/UV processing use the queue.
+
+HA recorder and automation traces are separate persistence systems. Exclude
+`strava_activity_tools_activity_ready` and `strava_activity_tools_error` from recorded events,
+and review trace/backup retention and HA access before public use. An all-day
+training calendar alone cannot safely identify a completed activity as warm-up.
+
+No production data, credentials, real activity fixtures, or location exports are
+included. Examples and tests are synthetic. No data is sent to an AI service.
+Provider API policies apply separately from this project’s code license.
+
+## Calendar-assisted workout suggestions
+
+`strava_activity_tools.suggest_workout` is a read-only action. Select the Strava Activity Tools
+account, activity ID, and training-calendar entity. It fetches the owned activity
+and that local day's calendar entries through HA's native `calendar.get_events`.
+It returns `status`, a stable `reason`, and proposed `changes`, never a write.
+
+The initial matcher recognizes explicit distance/time interval repeats and
+multiple sets. Recorded lap lengths/times must match the prescribed work reps,
+with slower adjacent recovery laps. Standing recoveries use elapsed time.
+Uniform auto-laps, missing evidence, unsupported nested repeats, ambiguous
+matches, easy/rest/race entries, and existing non-default labels abstain. Local
+dates use the activity's IANA timezone, including daylight saving boundaries.
+This is an initial interval matcher, not a general workout parser: continuous
+threshold/tempo/progression and inferred coach units still need further work.
+A matching date alone does not establish that the prescribed session was done.
+Suggestions on multiple uploads are not a unique assignment across those uploads;
+that needs a separate matching policy before any automatic writes.
+
+The generic `update_activity` action also accepts integer `workout_type`: run
+codes 0–3 and cycling codes 10–12, with sport validation and post-write verification.
+This is an explicit compatibility exception supported by Strautomator's public
+implementation but omitted from the current Strava update schema. Provider
+compatibility has been tested against a local HTTP server, not established by a
+new live tag mutation. Changing sport and subtype together is rejected. The
+preview lock and action-level dry-run default still apply. Calendar suggestions
+are never automatically passed to this write action.
+
+## Track shoes and reusable track detection
+
+In **Settings → Devices & services → Strava Activity Tools → Configure**, choose
+**Track shoes** from this athlete's active Strava shoes, or Disabled. This stores
+a gear ID in private HA options and shows its name. Replacements take effect on
+the next preview without editing automations. Opening Configure refreshes the
+catalog using the existing OAuth session; no new token store or polling is added.
+If profile permission is missing, **Request Strava reauthorization** starts the
+existing source integration's native approval flow. Complete that flow in HA and
+Strava, then reopen Configure. Missing catalog access does not block the preview
+lock or reset a saved pair. Reauthorization does not add another Strava entry.
+
+`strava_activity_tools.detect_track` returns read-only `on_track`, `track_fraction`, and
+the compatibility alias `likely_track`, using
+GPS geometry, independently of shoe settings or calendar access. It decodes a
+bounded precision-5 route, checks for repeated compact oval running at a typical
+200–400 m track scale, and rejects straight shuttles, short routes, malformed input,
+indoor/virtual/manual activities and missing GPS. It needs no predefined location
+list, external geocoder, Garmin account or AI. Garmin track-mode metadata is not
+reliably available through the documented Strava activity response.
+
+This is a heuristic, not proof of a track: an oval park circuit can resemble one,
+and noisy GPS or a combined road warm-up can cause abstention. A bounded segment scan tolerates
+a road approach when track-like segments cover at least 20% of the route; an easy run
+that merely includes some track laps still does not establish a track workout. Only full detailed
+polylines are used; no attempt is made to infer a complete route from a simplified
+summary. Computation runs in HA's executor rather than its main event loop. Input
+is capped at 100,000 encoded characters / 10,000 points, with no route persistence
+or route logging by this component.
+
+Calendar-preview responses distinguish `is_workout` from `on_track` and include a
+separate `track_shoes` suggestion. A likely
+outdoor track plus a recognized interval session or an existing Workout label can
+suggest the selected shoes. Treadmill workouts can still receive a Workout-tag
+suggestion but never a track-shoe suggestion. A different non-primary shoe is
+preserved; an already selected track shoe needs no change. Strava cannot tell us
+whether a default shoe was explicitly selected by the user, so that distinction
+must be considered before enabling automatic writes. Unavailable catalog data
+abstains for shoes independently of workout tagging. **Shoe and tag suggestions
+are read-only.** Gear retries and automatic assignment remain a separate gate.
+
+## Development
+
+```sh
+uv venv --python 3.14
+uv pip install --python .venv/bin/python -r requirements-dev.txt
+.venv/bin/python -m pytest --cov=custom_components.strava_activity_tools --cov-report=term-missing
+.venv/bin/ruff check .
+.venv/bin/ruff format --check .
+```
+
+Behavioral tests cover real HA config flows, services, event dispatch, recorder
+SQL history, and blueprint execution, with fake OAuth responses. Live deployment
+and public release validation are deliberately separate from these tests.
+
+License: MIT. Code is original to this prototype; no competitor implementation was copied.

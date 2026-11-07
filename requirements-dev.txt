@@ -1,0 +1,5 @@
+# Tested baseline. Upgrade HA and its matching custom-component harness together.
+homeassistant==2026.10.4
+pytest-homeassistant-custom-component==0.13.375
+pytest-cov==7.1.0
+ruff==0.17.4
