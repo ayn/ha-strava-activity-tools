@@ -154,3 +154,18 @@ their issues. Advertised competitor features do not prove our API access or
 establish demand; ask users for concrete examples before widening scope. AI
 activity-data analysis, route-history storage and undocumented privacy/map writes
 remain outside this roadmap.
+
+## Planned-workout interoperability opportunity
+
+[Issue #22](https://github.com/ayn/ha-strava-activity-tools/issues/22) explores
+reusing Workoutbridge/Prescribed.fit structured plans for completed-activity
+matching. The [public shared model](https://github.com/ayn/workoutbridge/blob/main/workoutbridge/parser.py)
+already represents typed steps/repeats and review state; the
+[current web API](https://github.com/ayn/workoutbridge/blob/main/docs/web-api.md)
+is explicitly provisional and does not provide a stable external-client contract.
+
+Start with an optional read-only contract shared by hosted and self-hosted
+adapters. Keep matching portable for HA and service backends. Completion feedback
+would be a separate opt-in phase, with revision/identity checks and idempotency;
+private coach text must not automatically become a public activity description.
+This is a proposal, not existing functionality or a hosted-service requirement.
