@@ -52,7 +52,7 @@ Broader positive classification writes and fresh API-derived annotations after
 upload still need live coverage. Native muting/tag/shoe consumers are separate
 from the durable fetch/environment queue.
 
-## Preview and history support (unreleased 0.6.2)
+## Preview and history support (0.6.2)
 
 The full suite passes with 268 tests and 93.91% coverage. Ruff lint and formatting
 checks pass, as does a Gitleaks scan of the repository files. The first journal
@@ -76,6 +76,6 @@ dashboard. Saved dashboard configuration and live Markdown rendering were
 verified. Processing history begins with new actions; old receipts were not
 backfilled. No new Strava mutation was performed for this validation.
 
-This remains an unreleased build, not a default catalog release. Dashboard
+Version 0.6.2 is an early-access custom-repository release, not a default catalog release. Dashboard
 screenshots were unavailable on that instance; live template rendering is not
 a browser screenshot or a claim of visual validation across screen sizes.

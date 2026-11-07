@@ -142,13 +142,13 @@ Do not enable this enrichment alongside another writer doing the same job until
 a dry run confirms the intended handoff. Existing cloud workers and rules need
 not be removed for local development.
 
-## Previews and processing history (next release)
+## Previews and processing history (0.6.2)
 
 Each account has **Latest preview** and **Latest run** sensors under
 **Settings → Devices & services → Strava Activity Tools → Devices**. They update
 from actions and webhook processing, without activity polling. Select either
 sensor to see the latest result and its `recent` list, or use **Add to dashboard**
-for a native tile. This is included in the unreleased 0.6.2 code, not v0.6.1.
+for a native tile. This is available in v0.6.2 and newer, not v0.6.1.
 
 For a readable list with activity links, proposed/completed changes, AQI/UV,
 matching reasons and retry/error details, add a native **Manual** dashboard card
