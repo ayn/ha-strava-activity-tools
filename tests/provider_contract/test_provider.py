@@ -14,7 +14,10 @@ from .conftest import delivery
 
 async def test_external_network_is_blocked(linked):
     with socket.socket() as connection:
-        with pytest.warns(UserWarning, match="A test tried"), pytest.raises(SocketConnectBlockedError):
+        with (
+            pytest.warns(UserWarning, match="A test tried"),
+            pytest.raises(SocketConnectBlockedError),
+        ):
             connection.connect(("192.0.2.1", 443))
 
 
