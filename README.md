@@ -233,7 +233,9 @@ error category and IDs for repair, not the raw API response.
   spatial resolution is roughly 45 km, versus roughly 11 km in Europe.
 - Only rounded start coordinates (two decimals) and the selected hour are sent.
   No Strava credentials, activity ID, title or route leave HA for the weather API.
-  API-derived additions include an Open-Meteo/CAMS credit. Data uses
+  API-derived additions include the compact credit
+  `Open-Meteo/CAMS · https://open-meteo.com/en/licence`. Existing generated long
+  credits are shortened on reprocessing, preserving readings and unrelated notes. Data uses
   [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/); see the
   [provider documentation](https://open-meteo.com/en/docs/air-quality-api).
   Personal non-commercial access needs no API key; commercial use requires a

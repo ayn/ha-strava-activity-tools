@@ -61,7 +61,7 @@ def test_match(activity, filters, expected):
 
 def test_environment_preserves_notes_and_is_idempotent():
     updated = append_environment("Coach notes\r\n", 50, 0)
-    assert updated == "Coach notes\r\n\nAQI 50 💚\nUV Index 0 🟢"
+    assert updated == "Coach notes\r\n\r\nAQI 50 💚\r\nUV Index 0 🟢"
     assert append_environment(updated, 90, 3) == updated
 
 

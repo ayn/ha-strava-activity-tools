@@ -117,3 +117,58 @@ def test_existing_credit_preserved_when_filling_a_second_metric():
     assert result.startswith(original)
     assert result.count(CREDIT) == 1
     assert result.endswith("UV Index 1 🟢")
+
+
+LEGACY_CREDIT = (
+    "Estimates: Open-Meteo / CAMS (https://open-meteo.com/en/docs/air-quality-api; CC BY 4.0)"
+)
+SHORT_CREDIT = "Open-Meteo/CAMS · https://open-meteo.com/en/licence"
+
+
+def test_generated_credit_uses_short_license_link():
+    assert CREDIT == SHORT_CREDIT
+
+
+@pytest.mark.parametrize("newline", ["\n", "\r\n", "\r"])
+def test_credit_only_migration_preserves_notes_metrics_and_newline_style(newline):
+    original = newline.join(
+        ["Coach's café notes  ", "", "AQI 36 💚", "UV Index 0 🟢", LEGACY_CREDIT, "tail  ", ""]
+    )
+    expected = original.replace(LEGACY_CREDIT, SHORT_CREDIT)
+    assert append_environment(original, None, None) == expected
+    assert append_environment(expected, None, None) == expected
+
+
+@pytest.mark.parametrize(
+    "credits",
+    [
+        [LEGACY_CREDIT, LEGACY_CREDIT],
+        [LEGACY_CREDIT, SHORT_CREDIT],
+        [SHORT_CREDIT, LEGACY_CREDIT, SHORT_CREDIT],
+    ],
+)
+def test_only_exact_generated_credit_lines_are_normalized_and_deduplicated(credits):
+    original = "AQI 36 💚\nUV Index 0 🟢\n" + "\n".join(credits) + "\nMore notes"
+    expected = "AQI 36 💚\nUV Index 0 🟢\n" + SHORT_CREDIT + "\nMore notes"
+    assert append_environment(original, None, None, CREDIT) == expected
+
+
+@pytest.mark.parametrize(
+    "credit_note",
+    [
+        "Quoted: " + LEGACY_CREDIT,
+        LEGACY_CREDIT + " (my own note)",
+        " " + LEGACY_CREDIT,
+        LEGACY_CREDIT + " ",
+        "My source is Open-Meteo / CAMS",
+    ],
+)
+def test_credit_like_user_notes_are_never_rewritten(credit_note):
+    original = "AQI 36 💚\nUV Index 0 🟢\n" + credit_note
+    assert append_environment(original, None, None, CREDIT) == original
+
+
+def test_filling_missing_metric_uses_existing_crlf_style_and_one_new_credit():
+    original = "Notes\r\n\r\nAQI 36 💚\r\n" + LEGACY_CREDIT
+    expected = "Notes\r\n\r\nAQI 36 💚\r\n" + SHORT_CREDIT + "\r\n\r\nUV Index 1 🟢"
+    assert append_environment(original, None, 1, CREDIT) == expected
