@@ -8,10 +8,10 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .client import ActivityError
 from .core import nonnegative, parse_time
+from .environment import CREDIT as CREDIT
 
 ENDPOINT = "https://air-quality-api.open-meteo.com/v1/air-quality"
 TIMEOUT_SECONDS = 20
-CREDIT = "Estimates: Open-Meteo / CAMS (https://open-meteo.com/en/docs/air-quality-api; CC BY 4.0)"
 
 
 def weather_request(start: str, gps: list) -> dict:

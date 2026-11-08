@@ -9,6 +9,11 @@ from typing import Any
 
 from .core import nonnegative, parse_time
 
+CREDIT = "Open-Meteo/CAMS · https://open-meteo.com/en/licence"
+LEGACY_CREDIT = (
+    "Estimates: Open-Meteo / CAMS (https://open-meteo.com/en/docs/air-quality-api; CC BY 4.0)"
+)
+
 
 def aqi_color(value: int) -> str:
     """US EPA AQI bands, not an index conversion."""
@@ -41,19 +46,33 @@ def uv_color(value: int) -> str:
 def missing_environment(description: str | None) -> list[bool]:
     """Which metric lines are missing, independently of where their values come from."""
     return [
-        not bool(re.search(rf"^{label}\s+\d", description or "", re.I | re.M))
+        not bool(re.search(rf"(?:^|[\r\n]){label}\s+\d", description or "", re.I))
         for label in ("AQI", "UV Index")
     ]
+
+
+def normalize_environment_credit(description: str | None) -> str:
+    """Replace only exact generated credit lines, preserving unrelated text bytes."""
+    output = []
+    found = False
+    for line in (description or "").splitlines(keepends=True):
+        content = line.rstrip("\r\n")
+        if content not in (LEGACY_CREDIT, CREDIT):
+            output.append(line)
+        elif not found:
+            output.append(CREDIT + line[len(content) :])
+            found = True
+    return "".join(output)
 
 
 def append_environment(
     description: str | None, aqi: Any, uv: Any, source: str | None = None
 ) -> str:
-    """Append missing annotations once, preserving all existing text verbatim."""
-    original = description or ""
+    """Append missing annotations once and normalize known generated source credits."""
+    original = normalize_environment_credit(description)
     lines = []
     for label, raw, color in (("AQI", aqi, aqi_color), ("UV Index", uv, uv_color)):
-        if re.search(rf"^{label}\s+\d", original, re.I | re.M):
+        if re.search(rf"(?:^|[\r\n]){label}\s+\d", original, re.I):
             continue
         value = nonnegative(raw)
         if value is None:
@@ -64,8 +83,10 @@ def append_environment(
         return original
     if source and source not in original.splitlines():
         lines.append(source)
-    separator = "" if not original else "\n" if original.endswith("\n") else "\n\n"
-    return original + separator + "\n".join(lines)
+    match = re.search(r"\r\n|\r|\n", original)
+    newline = match.group() if match else "\n"
+    separator = "" if not original else newline if original.endswith(("\n", "\r")) else newline * 2
+    return original + separator + newline.join(lines)
 
 
 def reading_at(rows: list[dict[str, Any]], start: str) -> float | None:
