@@ -79,3 +79,13 @@ backfilled. No new Strava mutation was performed for this validation.
 Version 0.6.2 is an early-access custom-repository release, not a default catalog release. Dashboard
 screenshots were unavailable on that instance; live template rendering is not
 a browser screenshot or a claim of visual validation across screen sizes.
+
+
+## Durable mute outage recovery (v0.6.4)
+
+Red: the native mute blueprint failed `source_not_loaded` before saving any job;
+the restart/cooldown contract rejected `mute` as an invalid job. Green: matching
+and narrow mute now share one stored intent, retry a missing source and rate
+limits, and retain filters across reload. Tests cover duplicate delivery, preview
+locks on queued work, blank/malformed filters, ownership and a title edited between
+reads. No synthetic webhook is fired into a live write automation.

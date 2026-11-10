@@ -20,6 +20,8 @@ from .const import DOMAIN, ERROR_EVENT
 from .jobs import DurableJobs
 from .journal import RunJournal
 
+JOB_OPERATIONS = {"environment": "append_environment", "mute": "mute_activity", "fetch": "fetch"}
+
 RECOVERED_EVENT = "strava_activity_tools_recovered"
 
 
@@ -60,7 +62,7 @@ class JobWorker:
             result = await execute(job)
             if self.journal:
                 self.journal.record(
-                    "append_environment" if job["kind"] == "environment" else "fetch",
+                    JOB_OPERATIONS[job["kind"]],
                     job["activity_id"],
                     job["parameters"].get("dry_run", False),
                     result,
@@ -169,7 +171,7 @@ class JobWorker:
                         and job["last_error"] != "wrong_athlete"
                     ):
                         self.journal.record(
-                            "append_environment" if job["kind"] == "environment" else "fetch",
+                            JOB_OPERATIONS[job["kind"]],
                             job["activity_id"],
                             False,
                             {

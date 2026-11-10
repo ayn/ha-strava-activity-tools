@@ -20,6 +20,7 @@ from .enrichment import enrich_description
 from .environment import environment_eligible, missing_environment
 from .history import async_readings
 from .journal import RunJournal, journal_store
+from .muting import mute_activity, mute_parameters
 from .session import HASession
 from .tracks import track_evidence
 from .weather import CREDIT, async_weather_readings
@@ -102,6 +103,12 @@ async def async_setup(hass: HomeAssistant, config: dict[str, Any]) -> bool:
                 return runtime.worker.status()
             if call.service == "replay_job":
                 return await runtime.worker.replay(call.data["job_id"])
+            if call.service == "mute_activity":
+                params = mute_parameters({"filters": call.data["filters"], "dry_run": preview})
+                if not preview:
+                    return await runtime.worker.submit("mute", call.data["activity_id"], params)
+                bind_source(hass, runtime)
+                return await mute_activity(runtime.client, call.data["activity_id"], params)
             if call.service == "append_environment" and not preview:
                 params = environment_parameters(call.data)
                 return await runtime.worker.submit("environment", call.data["activity_id"], params)
@@ -217,6 +224,7 @@ async def async_setup(hass: HomeAssistant, config: dict[str, Any]) -> bool:
                 "detect_track",
                 "suggest_workout",
                 "update_activity",
+                "mute_activity",
                 "append_environment",
             )
         )
@@ -235,7 +243,7 @@ async def async_setup(hass: HomeAssistant, config: dict[str, Any]) -> bool:
                     },
                 )
             raise
-        if record and (call.service != "append_environment" or preview):
+        if record and (call.service not in ("append_environment", "mute_activity") or preview):
             if call.service == "detect_track":
                 result_for_history = {
                     **result,
@@ -249,6 +257,10 @@ async def async_setup(hass: HomeAssistant, config: dict[str, Any]) -> bool:
         return result
 
     for name, extra in {
+        "mute_activity": {
+            vol.Required("filters"): dict,
+            vol.Optional("dry_run", default=True): cv.boolean,
+        },
         "get_activity": {},
         "detect_track": {},
         "match_activity": {vol.Optional("filters", default={}): dict},
@@ -359,12 +371,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     async def execute(job: dict) -> dict:
         if (
-            job["kind"] == "environment"
+            job["kind"] in ("environment", "mute")
             and not job["parameters"]["dry_run"]
             and entry.options.get("preview_only", True)
         ):
             raise ActivityError("writes_disabled")
         bind_source(hass, runtime)
+        if job["kind"] == "mute":
+            return await mute_activity(runtime.client, job["activity_id"], job["parameters"])
         if job["kind"] == "environment":
             return await environment_task(
                 hass, runtime.client, job["activity_id"], job["parameters"]

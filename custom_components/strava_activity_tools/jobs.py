@@ -12,10 +12,13 @@ from copy import deepcopy
 from typing import Any
 
 from .client import ActivityError
+from .muting import mute_parameters
 
 TTL = 7 * 86400
 CAPACITY = 1024
 DELAYS = (60, 300, 1800, 7200)
+# A seven-day lifetime bounds repeated failures; allow their counters to reload.
+MAX_ATTEMPTS = TTL // min(DELAYS) + 2
 RETRYABLE = frozenset(
     {
         "upstream_unavailable",
@@ -44,14 +47,16 @@ SAFE_ERRORS = RETRYABLE | frozenset(
 
 
 def intent(kind: str, activity_id: str, parameters: dict[str, Any] | None) -> dict[str, Any]:
-    """Only persist validated IDs and the minimum environment settings."""
+    """Only persist validated IDs and minimum operation settings."""
     if type(activity_id) is not str or not re.fullmatch(r"[1-9][0-9]*", activity_id):
         raise ActivityError("invalid_activity_id")
-    if kind not in ("fetch", "environment"):
+    if kind not in ("fetch", "environment", "mute"):
         raise ActivityError("invalid_job")
     params = {} if parameters is None else deepcopy(parameters)
     if not isinstance(params, dict):
         raise ActivityError("invalid_job")
+    if kind == "mute":
+        params = mute_parameters(params)
     if kind == "fetch" and params:
         raise ActivityError("invalid_job")
     if kind == "environment":
@@ -150,7 +155,7 @@ class DurableJobs:
                             or job[name] < 0
                         ):
                             raise ValueError()
-                    if type(job["attempt"]) is not int or not 0 <= job["attempt"] <= 5:
+                    if type(job["attempt"]) is not int or not 0 <= job["attempt"] <= MAX_ATTEMPTS:
                         raise ValueError()
                     if type(job["notified"]) is not bool or job["last_error"] not in SAFE_ERRORS | {
                         None
@@ -267,7 +272,11 @@ class DurableJobs:
                 jobs = deepcopy(self.jobs)
                 current = jobs[key]
                 attempt = current["attempt"]
-                retry = category in RETRYABLE and attempt <= len(DELAYS)
+                retry = category in RETRYABLE and (
+                    attempt <= len(DELAYS)
+                    or job["kind"] == "mute"
+                    or category == "source_not_loaded"
+                )
                 current.update(
                     status="queued" if retry else "failed",
                     last_error=category,

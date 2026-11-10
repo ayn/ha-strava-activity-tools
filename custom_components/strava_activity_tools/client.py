@@ -168,12 +168,19 @@ class ActivityClient:
         dry_run: bool,
         *,
         expected: dict[str, Any] | None = None,
+        predicate: Callable[[dict[str, Any]], bool] | None = None,
     ) -> dict[str, Any]:
         validate_expected(expected)
         if type(dry_run) is not bool:
             raise ActivityError("invalid_dry_run")
         async with self._lock:
             before = await self.get(activity_id)
+            if predicate is not None and not predicate(before):
+                return {
+                    "activity_id": str(activity_id),
+                    "status": "skipped_ineligible",
+                    "changes": {},
+                }
             if expected and any(before.get(key) != value for key, value in expected.items()):
                 raise ActivityError("activity_changed_retry")
             changes = transform(before)
@@ -202,6 +209,12 @@ class ActivityClient:
             if dry_run or not changes:
                 return result
             latest = await self.get(activity_id)
+            if predicate is not None and not predicate(latest):
+                return {
+                    "activity_id": str(activity_id),
+                    "status": "skipped_ineligible",
+                    "changes": {},
+                }
             if (
                 (expected and any(latest.get(key) != value for key, value in expected.items()))
                 or any(latest.get(key) != before.get(key) for key in changes)

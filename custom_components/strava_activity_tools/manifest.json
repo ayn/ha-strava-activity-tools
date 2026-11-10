@@ -20,5 +20,5 @@
   "iot_class": "cloud_push",
   "issue_tracker": "https://github.com/ayn/ha-strava-activity-tools/issues",
   "requirements": [],
-  "version": "0.6.3"
+  "version": "0.6.4"
 }
