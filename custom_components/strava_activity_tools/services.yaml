@@ -279,5 +279,43 @@
         }
       }
     }
+  },
+  "mute_activity": {
+    "name": "Mute matching activity",
+    "description": "Save a matching feed-mute intent before accessing Strava. Live jobs retry connection/rate-limit failures and survive restarts; filters are rechecked before writing. Preview is the default.",
+    "fields": {
+      "config_entry_id": {
+        "name": "Strava Activity Tools account",
+        "required": true,
+        "selector": {
+          "config_entry": {
+            "integration": "strava_activity_tools"
+          }
+        }
+      },
+      "activity_id": {
+        "name": "Activity ID",
+        "required": true,
+        "example": "123456",
+        "selector": {
+          "text": {}
+        }
+      },
+      "filters": {
+        "name": "Selected filters",
+        "default": {},
+        "selector": {
+          "object": {}
+        },
+        "required": true
+      },
+      "dry_run": {
+        "name": "Preview only",
+        "default": true,
+        "selector": {
+          "boolean": {}
+        }
+      }
+    }
   }
 }

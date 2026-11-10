@@ -1,7 +1,7 @@
 """Contract tests use fake OAuth, never live Strava credentials."""
 
 from copy import deepcopy
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
@@ -392,3 +392,38 @@ async def test_indoor_flag_changed_after_preview_blocks_shoe_write(api):
             "9", {"gear_id": "g2"}, False, expected={"trainer": False}
         )
     assert not writes(api)
+
+
+async def test_mute_rechecks_rule_after_independent_title_edit(api):
+    from custom_components.strava_activity_tools.muting import mute_activity
+
+    client = ActivityClient(api, "42")
+    api.activity["name"] = "Tracker walk"
+    fetch = client.get
+    reads = 0
+
+    async def renamed(activity_id):
+        nonlocal reads
+        reads += 1
+        if reads == 2:
+            api.activity["name"] = "Long hike I want visible"
+        return await fetch(activity_id)
+
+    with patch.object(client, "get", side_effect=renamed):
+        result = await mute_activity(
+            client, "9", {"filters": {"name_contains": "Tracker walk"}, "dry_run": False}
+        )
+    assert result["status"] == "skipped_ineligible"
+    assert not writes(api)
+
+
+async def test_mute_verified_write_is_idempotent_and_owner_checked(api):
+    from custom_components.strava_activity_tools.muting import mute_activity
+
+    params = {"filters": {"name_contains": "Run"}, "dry_run": False}
+    assert (await mute_activity(ActivityClient(api, "42"), "9", params))["status"] == "updated"
+    assert (await mute_activity(ActivityClient(api, "42"), "9", params))["status"] == "unchanged"
+    assert len(writes(api)) == 1
+    with pytest.raises(ActivityError, match="wrong_athlete"):
+        await mute_activity(ActivityClient(api, "99"), "9", params)
+    assert len(writes(api)) == 1

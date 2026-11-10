@@ -26,6 +26,7 @@ RETENTION = 7 * 86400
 OPERATIONS = frozenset(
     {
         "update_activity",
+        "mute_activity",
         "suggest_workout",
         "match_activity",
         "detect_track",

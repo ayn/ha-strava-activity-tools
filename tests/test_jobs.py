@@ -329,3 +329,42 @@ async def test_ineligible_retry_is_skipped_not_reported_as_verified_recovery(set
     await queue.run_due()
     assert queue.jobs[key]["status"] == "skipped"
     assert notify.call_args.args == (key, "expired", "")
+
+
+async def test_mute_intent_retains_filters_across_restart_and_source_recovery(setup):
+    disk, execute, _, now, make = setup
+    queue = make()
+    params = {"filters": {"name_contains": "Tracker walk"}, "dry_run": False}
+    key = await queue.submit("mute", "9", params)
+    assert disk.data["jobs"][key]["parameters"] == params
+    execute.side_effect = ActivityError("source_not_loaded")
+    for _ in range(7):
+        await queue.run_due()
+        now[0] += 7201
+    assert queue.jobs[key]["status"] == "queued"
+    loaded = make()
+    await loaded.load()
+    execute.side_effect = None
+    await loaded.run_due()
+    assert loaded.jobs[key]["status"] == "done"
+
+
+@pytest.mark.parametrize(
+    "filters",
+    [
+        {},
+        {"name_contains": " "},
+        {"name_contains": 3},
+        {"unknown": "anything"},
+        {"sport_types": "Run"},
+        {"distance_below_miles": True},
+        {"distance_below_miles": float("nan")},
+        {"distance_below_miles": 0},
+    ],
+)
+async def test_invalid_mute_filters_cannot_create_intents(setup, filters):
+    disk, execute, _, _, make = setup
+    with pytest.raises(ActivityError):
+        await make().submit("mute", "9", {"filters": filters, "dry_run": False})
+    assert disk.data is None
+    execute.assert_not_called()

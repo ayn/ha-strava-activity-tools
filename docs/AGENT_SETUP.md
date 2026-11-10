@@ -93,6 +93,9 @@ blueprint tool (`ha_manage_blueprints`) or the README's import links. Create nat
 automations with the config API. Do not hand-edit `automations.yaml` or `.storage`.
 
 Currently shipped blueprints cover mute, generic gear assignment and AQI/UV.
+Mute rules need the v0.6.4 integration and re-imported mute blueprint for durable
+matching/write retries. Preserve all existing inputs and preview settings when
+re-importing; the store integration update alone does not update blueprints.
 The complete workout-tag/track-shoe blueprint is still planned in #11; do not
 pretend it is available. Those actions currently require an assembled native
 automation with the documented guards.

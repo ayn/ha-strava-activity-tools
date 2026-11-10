@@ -65,17 +65,12 @@ async def test_mute_short_run_actual_automation(hass, distance, should_write):
         },
     )
     activity = {"id": 9, "athlete": {"id": 42}, "sport_type": "Run", "distance": distance}
-    with (
-        patch.object(client, "get", AsyncMock(return_value=activity)),
-        patch.object(
-            client, "update", AsyncMock(return_value={"status": "would_update"})
-        ) as update,
-    ):
+    with patch.object(client, "get", AsyncMock(return_value=activity)):
         hass.bus.async_fire(READY_EVENT, {"config_entry_id": "tools", "activity_id": "9"})
         await hass.async_block_till_done()
-        assert update.called is should_write
-        if should_write:
-            update.assert_awaited_once_with("9", {"hide_from_home": True}, True)
+        rows = hass.data[DOMAIN]["tools"].journal.recent(True)
+        assert rows[0]["status"] == ("would_update" if should_write else "skipped_ineligible")
+        assert rows[0].get("changes", {}) == ({"hide_from_home": True} if should_write else {})
 
 
 async def test_mute_different_account_does_not_run(hass):
@@ -215,3 +210,51 @@ async def test_environment_blueprint_defaults_to_api_without_sensors(hass):
         history.assert_not_awaited()
         weather.assert_awaited_once()
         assert transform.call_args.args[2] is True
+
+
+async def test_mute_intent_survives_source_outage_and_retries_without_new_webhook(hass, freezer):
+    from datetime import timedelta
+
+    client = await setup_blueprint(
+        hass,
+        "mute_activity",
+        {
+            "config_entry_id": "tools",
+            "name_contains": "Tracker walk",
+            "dry_run": False,
+        },
+    )
+    runtime = hass.data[DOMAIN]["tools"]
+    source = hass.data["ha_strava"].pop("source")
+    activity = {
+        "id": 9,
+        "athlete": {"id": 42},
+        "name": "Tracker walk with dog",
+        "sport_type": "Walk",
+        "hide_from_home": False,
+    }
+    with (
+        patch.object(client, "get", AsyncMock(return_value=activity)),
+        patch.object(
+            client,
+            "transform",
+            AsyncMock(return_value={"status": "updated", "changes": {"hide_from_home": True}}),
+        ) as write,
+    ):
+        hass.bus.async_fire(READY_EVENT, {"config_entry_id": "tools", "activity_id": "9"})
+        await hass.async_block_till_done(wait_background_tasks=True)
+        jobs = list(runtime.worker.queue.jobs.values())
+        assert len(jobs) == 1
+        assert jobs[0]["kind"] == "mute" and jobs[0]["status"] == "queued"
+        assert jobs[0]["last_error"] == "source_not_loaded"
+        write.assert_not_called()
+        hass.data["ha_strava"]["source"] = source
+        freezer.tick(timedelta(seconds=61))
+        await runtime.worker.process()
+        await hass.async_block_till_done(wait_background_tasks=True)
+        assert list(runtime.worker.queue.jobs.values())[0]["status"] == "done"
+        write.assert_awaited_once()
+        # Duplicate ready delivery reuses its receipt, never repeats a completed write.
+        hass.bus.async_fire(READY_EVENT, {"config_entry_id": "tools", "activity_id": "9"})
+        await hass.async_block_till_done(wait_background_tasks=True)
+        write.assert_awaited_once()

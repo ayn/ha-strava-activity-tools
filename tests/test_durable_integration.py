@@ -285,3 +285,75 @@ async def test_pending_real_write_cannot_resume_through_preview_lock(hass, confi
     assert result["status"] == "failed"
     assert runtime.worker.queue.jobs[result["job_id"]]["last_error"] == "writes_disabled"
     await runtime.worker.close()
+
+
+async def test_mute_service_retains_live_intent_across_reload_and_preview_lock(
+    hass, configured, freezer
+):
+    entry, runtime, activity = configured
+    activity.update(name="Tracker walk", sport_type="Walk", hide_from_home=False)
+    source = hass.data["ha_strava"].pop("source")
+    result = await hass.services.async_call(
+        DOMAIN,
+        "mute_activity",
+        {
+            "config_entry_id": "tools",
+            "activity_id": "9",
+            "filters": {"name_contains": "Tracker"},
+            "dry_run": False,
+        },
+        blocking=True,
+        return_response=True,
+    )
+    key = result["job_id"]
+    assert result["status"] == "queued"
+    stored = await job_store(hass, "tools").async_load()
+    assert stored["jobs"][key]["parameters"]["filters"] == {"name_contains": "Tracker"}
+    await async_unload_entry(hass, entry)
+    hass.data["ha_strava"]["source"] = source
+    # An operator turns previews back on while a saved live job is waiting.
+    hass.config_entries.async_update_entry(entry, options={"preview_only": True})
+    async with entry.setup_lock:
+        await async_setup_entry(hass, entry)
+    runtime = hass.data[DOMAIN]["tools"]
+    freezer.tick(timedelta(seconds=61))
+    with patch.object(runtime.client, "get", AsyncMock(return_value=activity)) as get:
+        await runtime.worker.process()
+    get.assert_not_called()
+    assert runtime.worker.queue.jobs[key]["status"] == "failed"
+    assert runtime.worker.queue.jobs[key]["last_error"] == "writes_disabled"
+    await async_unload_entry(hass, entry)
+
+
+async def test_mute_live_intent_survives_reload_and_rechecks_without_new_event(
+    hass, configured, freezer
+):
+    entry, runtime, activity = configured
+    activity.update(name="Tracker walk", sport_type="Walk", hide_from_home=False)
+    source = hass.data["ha_strava"].pop("source")
+    result = await hass.services.async_call(
+        DOMAIN,
+        "mute_activity",
+        {
+            "config_entry_id": "tools",
+            "activity_id": "9",
+            "filters": {"name_contains": "Tracker"},
+            "dry_run": False,
+        },
+        blocking=True,
+        return_response=True,
+    )
+    await async_unload_entry(hass, entry)
+    hass.data["ha_strava"]["source"] = source
+    async with entry.setup_lock:
+        await async_setup_entry(hass, entry)
+    runtime = hass.data[DOMAIN]["tools"]
+    freezer.tick(timedelta(seconds=61))
+    with patch.object(
+        runtime.client, "transform", AsyncMock(return_value={"status": "unchanged", "changes": {}})
+    ) as transform:
+        await runtime.worker.process()
+    transform.assert_awaited_once()
+    assert runtime.worker.queue.jobs[result["job_id"]]["status"] == "done"
+    assert runtime.journal.recent(False)[0]["operation"] == "mute_activity"
+    await async_unload_entry(hass, entry)

@@ -17,7 +17,7 @@ These buttons support custom-repository installation in the meantime.
 - Build native automations for feed mute, gear assignment and description edits.
 - Preview calendar-assisted workout tags and GPS-based track-shoe suggestions.
 - Process uploads through the existing Strava webhook and OAuth connection, with
-  durable AQI/UV retries and duplicate protection. No activity polling.
+  durable feed-mute and AQI/UV retries with duplicate protection. No activity polling.
 
 Preview is enabled by default. Suggestion actions are read-only; an explicitly
 enabled native automation can apply their proposed tags and shoes through the
@@ -181,6 +181,7 @@ traces; the history entities expose selected summaries.
 
 - `strava_activity_tools.get_activity`: fetch selected condition fields by ID.
 - `strava_activity_tools.match_activity`: evaluate filters without writing.
+- `strava_activity_tools.mute_activity`: preview a rule, or durably queue matching and feed muting.
 - `strava_activity_tools.suggest_workout`: preview calendar/lap matching and track-shoe suggestions.
 - `strava_activity_tools.detect_track`: inspect GPS track evidence without writing.
 - `strava_activity_tools.update_activity`: preview or update explicit documented fields.
@@ -254,19 +255,22 @@ write, and verified afterward. This narrows the edit race; Strava provides no
 atomic conditional write here, so a last-moment external edit remains possible.
 
 Jobs and completed receipts now survive HA restarts through the native private,
-atomic `Store` helper. Only IDs, account scope, sensor/settings references, timing,
+atomic `Store` helper. Only IDs, account scope, configured mute filters, sensor/settings references, timing,
 attempts, and safe error categories are persisted. No activity bodies or credentials
 are stored in the queue. Records expire after seven days and are bounded to 1,024
 per account. Changed parameters create a separate intent; previews never enqueue writes.
 
-For actual AQI/UV writes, the action returns `job_id` and a status such as `queued`,
+For actual mute and AQI/UV writes, the action returns `job_id` and a status such as `queued`,
 `done`, `failed`, or `skipped`. Use **Developer Tools → Actions → Strava Activity Tools:
 List jobs** to inspect the selected account, and **Replay job** with its job ID
 when a failed job's cause has been fixed. Replays retain the original account,
 settings and expiration deadline. Queued, running, completed, and expired jobs
 cannot be manually replayed as failed work.
 
-Five attempts use 1-minute, 5-minute, 30-minute and 2-hour backoffs. Rate-limit
+Retries use 1-minute, 5-minute, 30-minute and capped 2-hour backoffs. Mute jobs
+keep retrying transient failures until their seven-day expiration; a temporarily
+unloaded source does not exhaust any job’s retries. Other fetch/environment
+transport failures retain the five-attempt limit. Rate-limit
 Retry-After also delays other jobs in the same worker and survives a restart.
 One-shot timers process only existing jobs or retention cleanup; there is no
 scheduled activity discovery or API polling. Writes always re-fetch remote state,
@@ -284,9 +288,19 @@ resetting receipts. Account changes and malformed saved jobs fail closed.
 These guarantees start after job intent is committed. Webhooks missed while HA
 is down, and a crash before an internal event reaches the durable queue, are not
 recovered by polling. Delivery of a ready event is at least once across an
-interrupted attempt; downstream automations must remain idempotent. The generic
-mute/gear/update actions are not automatically turned into durable jobs by this
-release; only event preparation and AQI/UV processing use the queue.
+interrupted attempt; downstream automations must remain idempotent. Event
+preparation, `mute_activity`, and AQI/UV processing use the queue. Generic gear/tag
+updates through `update_activity` remain immediate actions.
+
+The mute blueprint in v0.6.4 saves its configured filters before contacting Strava.
+Re-import the blueprint after updating the integration to move existing rules to
+the durable action; input names and preview settings are unchanged. Every attempt
+checks ownership and current matching fields again immediately before a narrow,
+verified `hide_from_home` update. Already muted activities are no-ops; nonmatches
+are skipped. Switching the integration to Preview only prevents queued writes,
+and changing the source account never replays another account’s jobs. Rule text
+(including exact-title filters) is stored privately with the intent, not raw
+activity payloads. Preview calls never enqueue future writes.
 
 HA recorder and automation traces are separate persistence systems. Exclude
 `strava_activity_tools_activity_ready` and `strava_activity_tools_error` from recorded events,
@@ -379,7 +393,7 @@ These are proposals, not available features or delivery commitments. See the
 [pinned roadmap](https://github.com/ayn/ha-strava-activity-tools/issues/5) for
 priorities, acceptance criteria and discussion.
 
-- [Durable mute/tag/gear jobs](https://github.com/ayn/ha-strava-activity-tools/issues/7),
+- [Durable tag/gear jobs and remaining retry work](https://github.com/ayn/ha-strava-activity-tools/issues/7),
   plus [guided setup](https://github.com/ayn/ha-strava-activity-tools/issues/9) and
   [processing health, previews and repair](https://github.com/ayn/ha-strava-activity-tools/issues/10).
 - [Importable workout/track-shoe blueprints](https://github.com/ayn/ha-strava-activity-tools/issues/11),
