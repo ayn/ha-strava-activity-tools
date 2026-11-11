@@ -8,9 +8,13 @@ Experimental, MIT-licensed Home Assistant companion for `ha_strava`.
 [![Set up Strava Activity Tools](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=strava_activity_tools)
 
 **Early access:** requires `ha_strava` with activity-created events from
-[upstream #349](https://github.com/craibo/ha_strava/pull/349). The catalog submission
-and general onboarding wait for a provider release containing that feature.
-These buttons support custom-repository installation in the meantime.
+[upstream #349](https://github.com/craibo/ha_strava/pull/349). Until an upstream
+release includes it, new installations can use the
+[temporary provider fork](https://github.com/ayn/ha_strava/releases/tag/4.6.8.post1).
+Install that provider first, then this companion; neither the integration nor
+its blueprints download or replace another integration automatically.
+Default-catalog submission waits for an upstream provider release containing
+the event. The buttons support custom-repository installation in the meantime.
 
 - Add historical US EPA AQI and UV at an outdoor run’s start location worldwide,
   or use optional HA sensor history.
@@ -104,19 +108,50 @@ and [Tailscale Funnel](https://tailscale.com/docs/features/tailscale-funnel).
   [getting-started guide](https://developers.strava.com/docs/getting-started/).
   No second Strava app, login or webhook is needed for this companion.
 - The activity-created event from upstream [PR #349](https://github.com/craibo/ha_strava/pull/349),
-  or a version containing that feature. This dependency is not yet assumed merged.
+  or the temporary provider fork below. This dependency is not yet assumed merged.
 - Existing Strava OAuth consent with `activity:write` for actual writes;
   `activity:read_all` when processing private activities. Reauthorize through the
   OAuth owner if scopes are missing. This companion does not grant missing scopes.
 - HA recorder history only if selecting HA sensor history. Location API mode needs no HA weather sensors or home zone.
+
+### 1. Install the provider first
+
+For a fresh setup while #349 is pending:
+
+Complete the store's first-run warning and GitHub connection if requested.
+
+1. Add `https://github.com/ayn/ha_strava` as a custom **Integration** repository in
+   HACS or Marketplace, or use [Open provider repository](https://my.home-assistant.io/redirect/hacs_repository/?owner=ayn&repository=ha_strava&category=integration).
+2. Download **4.6.8.post1**, restart HA when requested, then add **Strava
+   (Unofficial)** in Settings → Devices & Services. Follow the
+   [provider's Strava app and OAuth instructions](https://github.com/ayn/ha_strava#temporary-companion-fork).
+3. Confirm the provider is loaded before adding the companion. Keep using its
+   OAuth connection and webhook; do not create a second credential store.
+
+The fork includes webhook events and legacy reauthorization fixes; it is a
+temporary alternative, not an upstream release. Only the webhook event is a
+required provider extension; the proposed generic fetch/write API is optional.
+Listing a custom integration as a dependency does not download its GitHub
+repository, and a blueprint cannot install integration code.
+
+**Existing upstream installation:** do not install both repositories over the same
+`ha_strava` folder. Marketplace 2026.11.1 rejects a second owner and offers no
+configuration-preserving source transfer. Do not delete/recreate your account to
+switch. If you already run patched provider files, keep the upstream update entity
+disabled; a manual upstream Marketplace reinstall can still overwrite them.
+Otherwise wait for a compatible upstream release or plan a backed-up manual
+installation with explicit consent. This companion never patches the provider.
+
+### 2. Install this companion
 
 Use the **Open in HACS or Marketplace** button above, or add
 `https://github.com/ayn/ha-strava-activity-tools` as a custom Integration repository.
 The same repository and releases serve both stores. The older `hacs_repository`
 link opens HACS before HA 2026.11 and Marketplace starting with that version.
 Download the integration; restart when requested by the store. This does not imply
-listing or approval in the default catalog. The runtime test baseline remains
-HA 2026.10.4; a 2026.11 runtime test is still pending.
+listing or approval in the default catalog. The automated test baseline remains
+HA 2026.10.4. A live HA 2026.11.1 smoke check verified loading, native actions and
+retained job receipts across restart; it is not a full multi-version test matrix.
 
 For a manual installation, copy `custom_components/strava_activity_tools` into
 HA’s `custom_components` folder and restart. Add **Strava Activity Tools** in

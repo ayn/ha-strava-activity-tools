@@ -60,12 +60,15 @@ Do not force a Core/store upgrade or add a second updater to work around an icon
    required by the companion. The independent retry test is
    [#351](https://github.com/craibo/ha_strava/pull/351).
 2. Test a clean install, updates, retained receipts and preview/write choices with
-   that released provider on HA 2026.10.4 and Marketplace-era HA. Current runtime
-   coverage is 2026.10.4; do not claim a broader matrix before running it. The
-   currently published custom-component test harness targets 2026.10.4.
+   that released provider on HA 2026.10.4 and Marketplace-era HA. The automated
+   baseline is 2026.10.4. A live 2026.11.1 smoke check verified loading, native
+   actions and retained receipts across restart, but does not establish a full
+   clean-install/update matrix for the newly released fork. The currently
+   published custom-component test harness targets 2026.10.4.
 3. Finish broad positive live-write validation with synthetic public fixtures
    and private operational checks. Keep limitations explicit: matching can abstain,
-   and native rule retries are not the durable fetch/environment queue.
+   and native tag/shoe retries are separate from the durable mute and
+   fetch/environment queues.
 4. Pass HACS validation without `ignore` and pass hassfest on the final revision.
    Then publish a full GitHub release with a tag matching the manifest version.
    Version 0.6.2 is an early-access custom-repository release of the tested
@@ -75,6 +78,12 @@ Do not force a Core/store upgrade or add a second updater to work around an icon
    `ayn/ha-strava-activity-tools` alphabetically to its `integration` list. Submit
    from the owner's account with maintainer edits enabled. Complete the template
    with the release and passing action-run links; do not request reviewers.
+
+The tagged `ayn/ha_strava` fork provides a separate, documented path for fresh
+early-access installations. It does not satisfy the upstream-release gate above,
+automatically install a provider, or provide an in-place source transfer for an
+existing Marketplace-managed upstream account. See the README's provider-first
+instructions and existing-installation caveat.
 
 Catalog submission is intentionally pending the upstream release and installation
 validation. Early-access custom-repository releases remain available to users

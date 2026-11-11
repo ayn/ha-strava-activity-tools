@@ -29,9 +29,12 @@ names, discover the equivalent native API rather than inventing a service.
 
 If no loaded `ha_strava` entry exists, stop the companion config flow and explain:
 “Install and configure ha_strava first; this companion reuses that connection.”
-Link the user to [ha_strava](https://github.com/craibo/ha_strava) and its setup
-instructions. Downloading the companion does not automatically install or
-configure the provider. Help with provider installation within the user's
+For a new installation while upstream #349 is pending, offer the
+[temporary provider fork, 4.6.8.post1](https://github.com/ayn/ha_strava/releases/tag/4.6.8.post1)
+as a custom Integration repository (`ayn/ha_strava`), with explicit user consent.
+Use its [setup instructions](https://github.com/ayn/ha_strava#temporary-companion-fork).
+Downloading the companion does not automatically install or configure the provider.
+Help with provider installation within the user's
 authorized scope, then resume companion setup after it loads.
 
 The provider owns the Strava app Client ID/Secret, OAuth consent and public
@@ -49,6 +52,12 @@ Verify the installed provider contains the activity-created event required by
 Do not infer support from the version being recent. Until an upstream release
 contains it, explain the prerequisite and available development path explicitly;
 never silently replace the provider with a fork or edit its installed files.
+For an existing Marketplace-managed provider, inspect repository ownership first.
+HA 2026.11.1 rejects another installed owner for the same domain and cannot forget
+the installed upstream repository while preserving its configuration. Do not
+delete the source account or edit `.storage` to force a transfer. An explicitly
+authorized manual patched install can retain its disabled upstream update entity,
+but a manual Marketplace reinstall remains an overwrite risk.
 
 For webhook connectivity, use the README's connectivity checklist. Strava needs
 public access to the provider's `/api/strava/webhook` callback for validation GETs
