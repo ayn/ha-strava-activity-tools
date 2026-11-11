@@ -118,6 +118,8 @@ and [Tailscale Funnel](https://tailscale.com/docs/features/tailscale-funnel).
 
 For a fresh setup while #349 is pending:
 
+Complete the store's first-run warning and GitHub connection if requested.
+
 1. Add `https://github.com/ayn/ha_strava` as a custom **Integration** repository in
    HACS or Marketplace, or use [Open provider repository](https://my.home-assistant.io/redirect/hacs_repository/?owner=ayn&repository=ha_strava&category=integration).
 2. Download **4.6.8.post1**, restart HA when requested, then add **Strava

@@ -76,6 +76,12 @@ Do not force a Core/store upgrade or add a second updater to work around an icon
    from the owner's account with maintainer edits enabled. Complete the template
    with the release and passing action-run links; do not request reviewers.
 
+The tagged `ayn/ha_strava` fork provides a separate, documented path for fresh
+early-access installations. It does not satisfy the upstream-release gate below,
+automatically install a provider, or provide an in-place source transfer for an
+existing Marketplace-managed upstream account. See the README's provider-first
+instructions and existing-installation caveat.
+
 Catalog submission is intentionally pending the upstream release and installation
 validation. Early-access custom-repository releases remain available to users
 whose provider already meets the event prerequisite. Catalog review can take months; no acceptance date is promised.
