@@ -61,12 +61,24 @@ Example mute configurations, all without private athlete data:
 | Fi walks | Device exactly `Fi Smart Collar` |
 | Peloton pre-run stretch | Device contains `Peloton`; title contains `pre-run stretch` |
 | Peloton post-run stretch | Device contains `Peloton`; title contains `post-run stretch` |
-| Short warm-up/cooldown runs | Sports `Run`, `TrailRun`; distance below **2.1 miles** |
+| Short warm-up/cooldown runs | Sports `Run`, `TrailRun`; distance below **2.1 miles**; **Keep tagged workouts visible** on |
 
 The short-run cutoff is strict: a run exactly 2.1 miles is not muted. This is a
 heuristic, not a determination of workout role. Review class title wording and
 existing rules before migration. Do not mute every Peloton `Workout`: that also
 includes strength and other sessions.
+
+In v0.6.5, **Keep tagged workouts visible** (`exclude_workouts`) protects runs and
+rides carrying Strava’s **Workout** tag. It is opt-in and rechecked on fresh data
+immediately before a mute write and on durable retries. It does not infer a workout
+from distance or the activity title. Other rules retain their existing defaults.
+
+If another automation automatically tags workouts, finish that classification
+before muting: emit a custom event containing `config_entry_id` and `activity_id`
+after a verified tag update (or a successful no-change classification), then select
+that event using the mute blueprint’s advanced `trigger_event_type` input. Don’t
+emit it on classification errors. The default remains the ordinary activity-ready
+event; account filtering and API ownership checks still apply.
 
 ## Connectivity before installation
 

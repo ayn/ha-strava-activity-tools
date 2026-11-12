@@ -29,8 +29,16 @@ def match_activity(
     device_exact: str = "",
     sport_types: list[str] | None = None,
     distance_below_miles: float | None = None,
+    exclude_workouts: bool = False,
 ) -> bool:
     """AND selected filters; title contains is case-insensitive, exact is exact."""
+    if exclude_workouts:
+        sport = activity.get("sport_type")
+        marker = activity.get("workout_type")
+        if (sport in {"Run", "TrailRun", "VirtualRun"} and marker == 3) or (
+            sport in {"Ride", "MountainBikeRide", "GravelRide", "VirtualRide"} and marker == 12
+        ):
+            return False
     for key, contains, exact in (
         ("name", name_contains, name_exact),
         ("device_name", device_contains, device_exact),

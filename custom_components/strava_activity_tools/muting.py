@@ -10,7 +10,7 @@ def mute_parameters(parameters: Any) -> dict:
     if not isinstance(parameters, dict) or set(parameters) - {"filters", "dry_run"}:
         raise ActivityError("invalid_job")
     filters = parameters.get("filters")
-    if not isinstance(filters, dict) or len(filters) > 6:
+    if not isinstance(filters, dict) or len(filters) > 7:
         raise ActivityError("invalid_filters")
     clean = {}
     for key, value in filters.items():
@@ -31,6 +31,11 @@ def mute_parameters(parameters: Any) -> dict:
                 raise ActivityError("invalid_filters")
             if value:
                 clean[key] = value
+        elif key == "exclude_workouts":
+            if type(value) is not bool:
+                raise ActivityError("invalid_filters")
+            if value:
+                clean[key] = True
         elif key == "distance_below_miles":
             distance = nonnegative(value)
             if distance is None or not 0 < distance <= 200:
@@ -39,7 +44,7 @@ def mute_parameters(parameters: Any) -> dict:
         else:
             raise ActivityError("invalid_filters")
     dry_run = parameters.get("dry_run", True)
-    if not clean or type(dry_run) is not bool:
+    if not (clean.keys() - {"exclude_workouts"}) or type(dry_run) is not bool:
         raise ActivityError("invalid_filters")
     return {"filters": clean, "dry_run": dry_run}
 

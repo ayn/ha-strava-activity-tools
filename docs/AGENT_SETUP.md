@@ -110,7 +110,12 @@ pretend it is available. Those actions currently require an assembled native
 automation with the documented guards.
 
 Select account and filters deliberately. Distance filters are currently miles
-and use a strict cutoff. Feed mute is not privacy. For AQI/UV, location API mode
+and use a strict cutoff. For v0.6.5 short-run rules, enable `exclude_workouts`
+when tagged workouts should stay visible. If an existing automation adds workout
+tags, make it emit a completion event only after successful classification/write
+verification and set the mute blueprint’s `trigger_event_type` to that event. This
+prevents a short-run mute from racing the tagger; retries recheck the actual tag.
+Feed mute is not privacy. For AQI/UV, location API mode
 needs no home weather sensors; HA history is an optional mode. Explain the external
 provider and coordinate-sharing behavior documented in the README. Track shoes
 are selected by name through Configure; generic gear assignment currently uses

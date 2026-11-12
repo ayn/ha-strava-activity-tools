@@ -258,3 +258,66 @@ async def test_mute_intent_survives_source_outage_and_retries_without_new_webhoo
         hass.bus.async_fire(READY_EVENT, {"config_entry_id": "tools", "activity_id": "9"})
         await hass.async_block_till_done(wait_background_tasks=True)
         write.assert_awaited_once()
+
+
+@pytest.mark.parametrize(
+    ("exclude", "marker", "status"),
+    [(True, 3, "skipped_ineligible"), (True, 0, "would_update"), (False, 3, "would_update")],
+)
+async def test_short_workout_exemption_in_real_blueprint(hass, exclude, marker, status):
+    client = await setup_blueprint(
+        hass,
+        "mute_activity",
+        {
+            "config_entry_id": "tools",
+            "sport_types": ["Run"],
+            "distance_below_miles": 2.1,
+            "exclude_workouts": exclude,
+        },
+    )
+    activity = {
+        "id": 9,
+        "athlete": {"id": 42},
+        "sport_type": "Run",
+        "distance": 1600,
+        "workout_type": marker,
+    }
+    with patch.object(client, "get", AsyncMock(return_value=activity)):
+        hass.bus.async_fire(READY_EVENT, {"config_entry_id": "tools", "activity_id": "9"})
+        await hass.async_block_till_done()
+        rows = hass.data[DOMAIN]["tools"].journal.recent(True)
+        assert rows[0]["status"] == status
+
+
+async def test_custom_event_waits_for_tagging_and_keeps_account_filter(hass):
+    client = await setup_blueprint(
+        hass,
+        "mute_activity",
+        {
+            "config_entry_id": "tools",
+            "sport_types": ["Run"],
+            "distance_below_miles": 2.1,
+            "exclude_workouts": True,
+            "trigger_event_type": "example_workout_processed",
+        },
+    )
+    activity = {
+        "id": 9,
+        "athlete": {"id": 42},
+        "sport_type": "Run",
+        "distance": 1600,
+        "workout_type": 0,
+    }
+    with patch.object(client, "get", AsyncMock(return_value=activity)) as get:
+        hass.bus.async_fire(READY_EVENT, {"config_entry_id": "tools", "activity_id": "9"})
+        hass.bus.async_fire(
+            "example_workout_processed", {"config_entry_id": "other", "activity_id": "9"}
+        )
+        await hass.async_block_till_done()
+        get.assert_not_called()
+        activity["workout_type"] = 3
+        hass.bus.async_fire(
+            "example_workout_processed", {"config_entry_id": "tools", "activity_id": "9"}
+        )
+        await hass.async_block_till_done()
+        assert hass.data[DOMAIN]["tools"].journal.recent(True)[0]["status"] == "skipped_ineligible"

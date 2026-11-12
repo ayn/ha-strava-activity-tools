@@ -36,6 +36,7 @@ FILTER_SCHEMA = vol.Schema(
         vol.Optional("device_contains"): str,
         vol.Optional("device_exact"): str,
         vol.Optional("sport_types"): [str],
+        vol.Optional("exclude_workouts"): bool,
         vol.Optional("distance_below_miles"): vol.All(vol.Coerce(float), vol.Range(min=0)),
     }
 )
