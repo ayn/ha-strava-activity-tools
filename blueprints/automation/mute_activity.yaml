@@ -4,7 +4,7 @@ blueprint:
     Match selected title/device/sport/distance fields, then hide the activity from the home feed.
     Filters combine with AND. This does not change activity privacy or delete the activity.
     Use separate automations for OR rules. Preview is enabled by default.
-    Requires Strava Activity Tools v0.6.4 or later for durable matching and muting.
+    Requires Strava Activity Tools v0.6.5 or later for durable matching and muting.
   source_url: https://github.com/ayn/ha-strava-activity-tools/blob/main/blueprints/automation/mute_activity.yaml
   domain: automation
   homeassistant:
@@ -53,6 +53,20 @@ blueprint:
           step: 0.1
           unit_of_measurement: mi
           mode: box
+    exclude_workouts:
+      name: Keep tagged workouts visible
+      description: Skip runs tagged Workout and rides tagged Workout, even when other filters match.
+      default: false
+      selector:
+        boolean:
+    trigger_event_type:
+      name: Activity event (advanced)
+      description: >-
+        Keep the default for normal uploads. A classification automation can emit a custom
+        event after tagging, with config_entry_id and activity_id, to avoid racing this rule.
+      default: strava_activity_tools_activity_ready
+      selector:
+        text:
     dry_run:
       name: Preview only
       description: Leave enabled until the automation trace shows the changes you expect.
@@ -66,9 +80,10 @@ variables:
   source_exact: !input device_exact
   sports: !input sport_types
   max_miles: !input distance_below_miles
+  skip_workouts: !input exclude_workouts
 triggers:
   - trigger: event
-    event_type: strava_activity_tools_activity_ready
+    event_type: !input trigger_event_type
     event_data:
       config_entry_id: !input config_entry_id
 actions:
@@ -85,7 +100,8 @@ actions:
         {{ dict(name_contains=title_contains, name_exact=title_exact,
                 device_contains=source_contains, device_exact=source_exact,
                 sport_types=sports) | combine(
-                dict(distance_below_miles=max_miles) if max_miles > 0 else {}) }}
+                dict(distance_below_miles=max_miles) if max_miles > 0 else {}) | combine(
+                dict(exclude_workouts=true) if skip_workouts else {}) }}
       dry_run: !input dry_run
     response_variable: mute_result
 mode: queued

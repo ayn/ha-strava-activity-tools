@@ -368,3 +368,19 @@ async def test_invalid_mute_filters_cannot_create_intents(setup, filters):
         await make().submit("mute", "9", {"filters": filters, "dry_run": False})
     assert disk.data is None
     execute.assert_not_called()
+
+
+async def test_workout_exemption_survives_durable_mute_reload(setup):
+    disk, execute, _, _, make = setup
+    queue = make()
+    params = {
+        "filters": {"sport_types": ["Run"], "distance_below_miles": 2.1, "exclude_workouts": True},
+        "dry_run": False,
+    }
+    key = await queue.submit("mute", "9", params)
+    loaded = make()
+    await loaded.load()
+    assert loaded.jobs[key]["parameters"] == params
+    execute.return_value = {"status": "skipped_ineligible"}
+    await loaded.run_due()
+    assert loaded.jobs[key]["status"] == "skipped"
