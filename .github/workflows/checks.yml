@@ -4,12 +4,9 @@ on:
   pull_request:
     paths:
       - custom_components/**
-      - development/custom_components/**
       - blueprints/**
       - examples/**
       - tests/**
-      - scripts/provider_release.py
-      - provider-compatibility.json
       - requirements-dev.txt
       - pyproject.toml
       - hacs.json
@@ -18,12 +15,9 @@ on:
     branches-ignore: [main]
     paths:
       - custom_components/**
-      - development/custom_components/**
       - blueprints/**
       - examples/**
       - tests/**
-      - scripts/provider_release.py
-      - provider-compatibility.json
       - requirements-dev.txt
       - pyproject.toml
       - hacs.json
@@ -51,4 +45,4 @@ jobs:
       - run: python -m pip install -r requirements-dev.txt
       - run: ruff check .
       - run: ruff format --check .
-      - run: python -m pytest --cov=custom_components.strava_activity_tools --cov=custom_components.ha_strava_automation --cov-report=term-missing --cov-fail-under=90
+      - run: python -m pytest --cov=custom_components.ha_strava_automation --cov-report=term-missing --cov-fail-under=90

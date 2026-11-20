@@ -1,20 +1,20 @@
 blueprint:
-  name: Strava Activity Tools - mute matching activities
+  name: Strava Automation - mute matching activities
   description: >-
     Match selected title/device/sport/distance fields, then hide the activity from the home feed.
     Filters combine with AND. This does not change activity privacy or delete the activity.
     Use separate automations for OR rules. Preview is enabled by default.
-    Requires Strava Activity Tools v0.6.5 or later for durable matching and muting.
-  source_url: https://github.com/ayn/ha-strava-activity-tools/blob/main/blueprints/automation/mute_activity.yaml
+    Requires Strava Automation v0.7.0 or later for durable matching and muting.
+  source_url: https://github.com/ayn/ha-strava-automation/blob/main/blueprints/automation/mute_activity.yaml
   domain: automation
   homeassistant:
     min_version: 2026.10.4
   input:
     config_entry_id:
-      name: Strava Activity Tools account
+      name: Strava Automation account
       selector:
         config_entry:
-          integration: strava_activity_tools
+          integration: ha_strava_automation
     name_contains:
       name: Title contains (case insensitive)
       default: ""
@@ -64,7 +64,7 @@ blueprint:
       description: >-
         Keep the default for normal uploads. A classification automation can emit a custom
         event after tagging, with config_entry_id and activity_id, to avoid racing this rule.
-      default: strava_activity_tools_activity_ready
+      default: ha_strava_automation_activity_ready
       selector:
         text:
     dry_run:
@@ -92,7 +92,7 @@ actions:
       {{ title_contains | trim != '' or title_exact | trim != ''
          or source_contains | trim != '' or source_exact | trim != ''
          or sports | length > 0 or max_miles > 0 }}
-  - action: strava_activity_tools.mute_activity
+  - action: ha_strava_automation.mute_activity
     data:
       config_entry_id: !input config_entry_id
       activity_id: "{{ trigger.event.data.activity_id }}"

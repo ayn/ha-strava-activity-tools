@@ -1,62 +1,36 @@
 # Contributor and agent guide
 
-- Work on a feature branch and use a pull request; never push directly to main.
-- Use red/green tests for behavioral changes. Keep fixtures synthetic: no real
-  activities, accounts, routes, locations, tokens or production configuration.
-- Require the same regression standard for outside contributions and third-party
-  PRs we prepare: reproduce behavioral failures before fixes, cover affected
-  trust/lifecycle paths and run the full suite. Do not weaken assertions, skip a
-  failing contract or replace HTTP/lifecycle coverage with mocks to get green CI.
-  Docs-only changes do not need artificial behavioral tests or release bumps.
-- Run pytest and Ruff before committing. Preserve docs-only CI path filters.
-- Documentation-only changes must not bump package/manifest versions, create
-  release tags or publish GitHub releases. Normal HA installs track versioned
-  releases; do not publish a new version just to clear a development-build prompt.
-- Reuse the existing Strava integration's OAuth session and webhook subscription.
-  Do not add copied tokens, another credential store or activity polling.
-
-  **Standalone development exception:** the owner authorized independent auth
-  under `development/custom_components/ha_strava_automation`. It uses its own
-  Strava API app and native HA Application Credentials/config entry. Build its
-  OAuth code/tests from official HA/Strava sources, without consulting the other
-  provider's auth implementation or tests. Prior architecture reading is disclosed;
-  do not claim formal clean-room provenance. Never copy existing credentials.
-  Keep this prototype outside the released companion's install path until ready.
-  The provider-reuse rule above still applies to the released companion.
-- Dry runs must not write. Verify ownership before disclosure or mutation, use
-  narrow writes, preserve independent edits and never log raw provider bodies.
+- Use a feature branch and pull request; never push directly to main.
+- Behavioral changes need red/green regressions, the full suite and required CI
+  checks. Apply the same standard to outside contributions and third-party PRs
+  we prepare. Exercise real HA HTTP/config-flow/lifecycle boundaries where mocks
+  would hide failures. Never weaken assertions or skip failures to get green CI.
+- Keep fixtures synthetic: no production activities, athletes, routes, locations,
+  training prescriptions, tokens or deployment configuration.
+- Run pytest with at least 90% coverage, Ruff check and Ruff format checks before
+  pushing. Documentation-only edits do not need artificial tests, CI/release
+  triggers or version bumps. Never publish just to clear an update prompt.
+- Own OAuth through native HA Application Credentials and OAuth2Session. Keep one
+  refresh owner per account. Do not copy secrets through tools, shell or files.
+  Author auth and auth tests from official HA/Strava sources without consulting
+  another provider's auth implementation/tests. Do not claim formal clean-room
+  provenance: prior architecture reading is disclosed in docs/PROVENANCE.md.
+- No scheduled activity discovery/polling. Timers only retry saved work or prune
+  retained state. Share subscriptions and API budgets per client ID, with separate
+  account queues. Do not delete another account's or integration's subscription.
+- Unsigned webhook fields, subscription IDs and routing IDs are not authentication.
+  Verify an activity's owner using the selected account's authenticated API data
+  before events, disclosures or mutations. Fail closed on ambiguous identity.
+- Preview calls never write or enqueue future writes. Live operations persist
+  intent, reread remote state, preserve independent edits and verify narrow writes.
+  Never log raw provider bodies, credentials or credential-bearing URLs.
 - Keep portable operations separate from HA adapters. Prefer native automations
-  and reusable blueprints to a separate rule builder.
-- workout_type is a deliberate compatibility exception to documented update
-  fields: keep strict integer/sport validation, preview and read-back checks.
-  Feed mute is not activity privacy.
-- Do not deploy to a user's HA instance or change real activities unless the user
-  authorizes that work. Publishing code does not authorize deployment.
-- For provider-boundary changes, run the real-provider suite described in
-  [COMPATIBILITY.md](docs/COMPATIBILITY.md). Do not claim compatibility from skipped
-  tests, silently exempt new upstream releases, or update the baseline pin without
-  reviewing and testing that provider revision.
-
-## Helping someone install or configure this integration
-
-Read [the agent setup guide](docs/AGENT_SETUP.md) before working on a live HA
-instance. It covers HA MCP discovery, the provider prerequisite, account/scopes,
-blueprints, history/dashboard setup, verification and rollback.
-
-- Discover existing `ha_strava` and companion entries first. Never assume the
-  first account is the intended one or create a duplicate to fix authorization.
-- A loaded `ha_strava` connection with the required activity-created event is a
-  prerequisite. The companion does not install it automatically. Explain missing
-  prerequisites; never silently patch the provider or copy OAuth tokens.
-- New installs keep both integration and automation previews enabled until the
-  user asks to enable writes. Upgrades preserve existing settings and receipts.
-- Use HA MCP's dedicated store/config-flow/blueprint/dashboard tools and native
-  APIs. Do not edit `.storage`, request secrets in chat, or bypass store notices.
-- Help the user find results: create an explicitly requested dashboard using
-  native cards, or explain the integration's Latest preview/Latest run entities.
-  History entities require the newer build described in the README.
-- Verify a read-only preview, account isolation, enabled consumers, preserved job
-  receipts and clean logs. A successful download is not proof the new code loaded.
-  Never fire a synthetic activity-created event into live write automations.
-- Report the installed version/ref, restart outcome, where results appear and any
-  remaining user steps. Record only sanitized validation in this public repo.
+  and reusable blueprints over a separate rule builder. Track detection is a
+  heuristic; shoes require both track and workout evidence, never an easy track jog.
+- workout_type is a deliberate undocumented-update-field compatibility exception:
+  preserve strict integer/sport validation and read-back checks. Feed mute does not
+  change activity privacy.
+- Publishing code does not authorize a live installation or activity mutation.
+  Read docs/AGENT_SETUP.md before using HA MCP. Use native HA/store/config-flow APIs;
+  do not edit .storage or ask for secrets in chat. Never fire synthetic events into
+  live write automations. Verify a version actually loaded after downloading.

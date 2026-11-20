@@ -21,15 +21,12 @@ Before pushing:
 ```sh
 ruff check .
 ruff format --check .
-python -m pytest --cov=custom_components.strava_activity_tools --cov=custom_components.ha_strava_automation --cov-report=term-missing --cov-fail-under=90
+python -m pytest --cov=custom_components.ha_strava_automation --cov-report=term-missing --cov-fail-under=90
 ```
 
 Review the complete diff and affected call path. State what changed, how it was
-tested and any limits in the PR description. Skipped opt-in provider contracts
-are not passing contracts. Do not lower coverage or silently exempt an upstream
-release to clear CI. Never test by injecting events into a live write automation.
+tested and any limits in the PR description. Do not lower coverage or silently exempt a failing regression to clear CI. Never test by injecting events into a live write automation.
 
 Documentation-only edits do not require behavioral tests, version bumps or
 releases. Code changes and releases do not authorize installation in anyone's
-Home Assistant instance. Keep the unreleased standalone work in `development/`
-until its packaging and cutover are ready.
+Home Assistant instance. Use a reviewed, versioned release for installation.

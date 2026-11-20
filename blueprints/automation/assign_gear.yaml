@@ -1,18 +1,18 @@
 blueprint:
-  name: Strava Activity Tools - assign gear to matching activities
+  name: Strava Automation - assign gear to matching activities
   description: >-
     Choose shoes or a bike by Strava gear ID. All selected filters combine with AND.
     Preview is enabled by default. An empty sport list matches any sport.
-  source_url: https://github.com/ayn/ha-strava-activity-tools/blob/main/blueprints/automation/assign_gear.yaml
+  source_url: https://github.com/ayn/ha-strava-automation/blob/main/blueprints/automation/assign_gear.yaml
   domain: automation
   homeassistant:
     min_version: 2026.10.4
   input:
     config_entry_id:
-      name: Strava Activity Tools account
+      name: Strava Automation account
       selector:
         config_entry:
-          integration: strava_activity_tools
+          integration: ha_strava_automation
     name_contains:
       name: Title contains (case insensitive)
       default: ""
@@ -71,11 +71,11 @@ variables:
   max_miles: !input distance_below_miles
 triggers:
   - trigger: event
-    event_type: strava_activity_tools_activity_ready
+    event_type: ha_strava_automation_activity_ready
     event_data:
       config_entry_id: !input config_entry_id
 actions:
-  - action: strava_activity_tools.match_activity
+  - action: ha_strava_automation.match_activity
     data:
       config_entry_id: !input config_entry_id
       activity_id: "{{ trigger.event.data.activity_id }}"
@@ -87,7 +87,7 @@ actions:
     response_variable: match_result
   - condition: template
     value_template: "{{ match_result.matches }}"
-  - action: strava_activity_tools.update_activity
+  - action: ha_strava_automation.update_activity
     data:
       config_entry_id: !input config_entry_id
       activity_id: "{{ trigger.event.data.activity_id }}"

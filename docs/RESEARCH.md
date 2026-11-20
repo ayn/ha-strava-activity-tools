@@ -129,7 +129,7 @@ not a claim that none exists.
 The initial priorities above are a historical research snapshot. Several are now
 implemented: native mute/gear actions, durable fetch/environment jobs, worldwide
 historical AQI/UV, and conservative calendar/track/shoe suggestions. Remaining
-work is tracked in the [roadmap issue](https://github.com/ayn/ha-strava-activity-tools/issues/5)
+work is tracked in the [roadmap issue](https://github.com/ayn/ha-strava-automation/issues/5)
 and indexed in [PLAN.md](PLAN.md); ideas are not delivery commitments.
 
 The latest primary feature pages reinforce these practical directions:
@@ -157,7 +157,7 @@ remain outside this roadmap.
 
 ## Planned-workout interoperability opportunity
 
-[Issue #22](https://github.com/ayn/ha-strava-activity-tools/issues/22) explores
+[Issue #22](https://github.com/ayn/ha-strava-automation/issues/22) explores
 reusing Workoutbridge/Prescribed.fit structured plans for completed-activity
 matching. The [public shared model](https://github.com/ayn/workoutbridge/blob/main/workoutbridge/parser.py)
 already represents typed steps/repeats and review state; the
