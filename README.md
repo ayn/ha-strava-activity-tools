@@ -460,6 +460,10 @@ priorities, acceptance criteria and discussion.
 
 ## Development
 
+Independent OAuth for a future standalone **Strava Automation** is being built
+in [the development prototype](development/README.md). It is outside this
+companion's installation path and is not yet a replacement release.
+
 ```sh
 uv venv --python 3.14
 uv pip install --python .venv/bin/python -r requirements-dev.txt

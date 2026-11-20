@@ -9,6 +9,15 @@
   releases; do not publish a new version just to clear a development-build prompt.
 - Reuse the existing Strava integration's OAuth session and webhook subscription.
   Do not add copied tokens, another credential store or activity polling.
+
+  **Standalone development exception:** the owner authorized independent auth
+  under `development/custom_components/ha_strava_automation`. It uses its own
+  Strava API app and native HA Application Credentials/config entry. Build its
+  OAuth code/tests from official HA/Strava sources, without consulting the other
+  provider's auth implementation or tests. Prior architecture reading is disclosed;
+  do not claim formal clean-room provenance. Never copy existing credentials.
+  Keep this prototype outside the released companion's install path until ready.
+  The provider-reuse rule above still applies to the released companion.
 - Dry runs must not write. Verify ownership before disclosure or mutation, use
   narrow writes, preserve independent edits and never log raw provider bodies.
 - Keep portable operations separate from HA adapters. Prefer native automations
