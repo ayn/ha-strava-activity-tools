@@ -1,16 +1,35 @@
 # Contributing
 
-Open an issue for a substantial feature before implementing it. Keep changes
-focused and include a failing regression test for behavioral fixes.
+Use a feature branch and pull request. Behavioral changes need a failing
+regression before the implementation, focused tests proving the intended behavior
+afterward, and the full suite passing. The same requirement applies to maintainer,
+agent and outside contributions, including fixes submitted to other projects.
 
-Use Python 3.14 and the dependencies in requirements-dev.txt. Run pytest with
-coverage, ruff check, and ruff format --check. The CI workflow runs the same
-checks and skips documentation-only changes.
+Use synthetic fixtures only. Do not include real athletes, accounts, routes,
+training prescriptions, tokens or deployment configuration. Native HA lifecycle,
+config-flow and HTTP tests should exercise the real framework where mocks could
+hide registration, routing, cleanup or callback failures.
 
-Use synthetic fixtures. Never check in real activity exports, routes, calendar
-feeds, credentials, deployment files or user accounts. Preserve preview defaults,
-OAuth ownership, narrow writes and idempotence. Document provider compatibility
-exceptions and test failure/retry behavior.
+For affected paths, test account isolation, untrusted input shapes and IDs,
+missing permissions, duplicate deliveries, fresh reads before writes, independent
+edits, partial failures, timeouts, retry persistence and restart/unload behavior.
+Negative cases must produce no sensitive events or unintended writes. Advance
+HA's test clock for scheduled retries instead of waiting on wall-clock sleeps.
 
-Code is MIT licensed. Open-Meteo/CAMS data attribution and provider API terms are
-separate requirements; do not remove source credit from API-derived annotations.
+Before pushing:
+
+```sh
+ruff check .
+ruff format --check .
+python -m pytest --cov=custom_components.strava_activity_tools --cov=custom_components.ha_strava_automation --cov-report=term-missing --cov-fail-under=90
+```
+
+Review the complete diff and affected call path. State what changed, how it was
+tested and any limits in the PR description. Skipped opt-in provider contracts
+are not passing contracts. Do not lower coverage or silently exempt an upstream
+release to clear CI. Never test by injecting events into a live write automation.
+
+Documentation-only edits do not require behavioral tests, version bumps or
+releases. Code changes and releases do not authorize installation in anyone's
+Home Assistant instance. Keep the unreleased standalone work in `development/`
+until its packaging and cutover are ready.

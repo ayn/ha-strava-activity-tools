@@ -3,6 +3,11 @@
 - Work on a feature branch and use a pull request; never push directly to main.
 - Use red/green tests for behavioral changes. Keep fixtures synthetic: no real
   activities, accounts, routes, locations, tokens or production configuration.
+- Require the same regression standard for outside contributions and third-party
+  PRs we prepare: reproduce behavioral failures before fixes, cover affected
+  trust/lifecycle paths and run the full suite. Do not weaken assertions, skip a
+  failing contract or replace HTTP/lifecycle coverage with mocks to get green CI.
+  Docs-only changes do not need artificial behavioral tests or release bumps.
 - Run pytest and Ruff before committing. Preserve docs-only CI path filters.
 - Documentation-only changes must not bump package/manifest versions, create
   release tags or publish GitHub releases. Normal HA installs track versioned

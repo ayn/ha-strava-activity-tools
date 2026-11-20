@@ -81,6 +81,7 @@ def oauth_responses(aioclient_mock):
             json=athlete_body if athlete_body is not None else {"id": athlete},
             status=athlete_status,
         )
+        aioclient_mock.get("https://www.strava.com/api/v3/push_subscriptions", json=[])
 
     return register
 
@@ -89,6 +90,10 @@ async def start_auth(hass, oauth_app):
     """Walk the actual HA user and implementation selection flow."""
     key, _ = oauth_app
     result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": "user"})
+    if result["type"].value == "menu":
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {"next_step_id": "new_account"}
+        )
     return await hass.config_entries.flow.async_configure(
         result["flow_id"], {"implementation": key}
     )
