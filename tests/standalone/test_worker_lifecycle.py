@@ -70,3 +70,35 @@ async def test_failed_native_setup_keeps_saved_writes_and_cleans_runtime(
         assert all(not app.targets for app in hass.data[f"{DOMAIN}_applications"].values())
     finally:
         await check.close()
+
+
+async def test_disabled_entry_cannot_execute_a_saved_live_intent(
+    hass, oauth_app, oauth_responses, aioclient_mock
+):
+    from homeassistant.config_entries import ConfigEntryDisabler
+
+    from .test_auth import account
+
+    entry = account(hass, oauth_app)
+    hass.config_entries.async_update_entry(
+        entry, options={"preview_only": False, "webhook_enabled": False}
+    )
+    oauth_responses()
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    runtime = entry.runtime_data
+    aioclient_mock.get(
+        "https://www.strava.com/api/v3/activities/123",
+        json={"id": 123, "athlete": {"id": 42}, "sport_type": "Run", "commute": True},
+    )
+    before = aioclient_mock.call_count
+    # Exercise the interval between disable and native unload completion.
+    entry.disabled_by = ConfigEntryDisabler.USER
+    try:
+        result = await runtime.worker.submit(
+            "update", "123", {"changes": {"commute": True}, "dry_run": False}
+        )
+        assert result["status"] == "queued"
+        assert runtime.worker.queue.jobs[result["job_id"]]["last_error"] == "source_not_loaded"
+        assert aioclient_mock.call_count == before
+    finally:
+        entry.disabled_by = None

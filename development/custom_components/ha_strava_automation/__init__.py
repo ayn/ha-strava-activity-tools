@@ -72,7 +72,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 async def async_setup_features(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Load account-local journals/jobs without a provider runtime dependency."""
-    from .actions import Runtime, activity_fields, environment_task, workout_suggestion
+    from .actions import Runtime, activity_fields, bind_source, environment_task, workout_suggestion
     from .client import ActivityClient, ActivityError, field_matches
     from .inbox import InboxPump
     from .journal import RunJournal
@@ -96,6 +96,8 @@ async def async_setup_features(hass: HomeAssistant, entry: ConfigEntry) -> None:
     runtime.journal = RunJournal(hass, entry)
 
     async def execute(job: dict) -> dict:
+        # A due timer can overlap disable/unload: recheck the current owner first.
+        bind_source(hass, runtime)
         if (
             job["kind"] != "fetch"
             and not job["parameters"].get("dry_run", False)
