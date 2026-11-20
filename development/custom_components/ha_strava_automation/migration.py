@@ -14,7 +14,7 @@ from homeassistant.components.application_credentials import (
     ClientCredential,
     async_import_client_credential,
 )
-from homeassistant.config_entries import ConfigEntryDisabler
+from homeassistant.config_entries import ConfigEntryDisabler, ConfigEntryState
 from homeassistant.helpers.config_entry_oauth2_flow import OAuth2Session, async_get_implementations
 from homeassistant.helpers.storage import Store
 
@@ -28,6 +28,7 @@ from .auth import (
 from .client import ActivityError
 from .const import DOMAIN
 from .quota import async_get_budget
+from .subscriptions import SubscriptionManager
 from .webhook import strava_id
 
 
@@ -61,7 +62,8 @@ async def async_prepare_migration(hass, source_entry_id):
         raise MigrationError("already_configured")
     for domain in ("strava_activity_tools", "activity_tools"):
         if any(
-            entry.disabled_by is None and entry.data.get("source_entry_id") == source_entry_id
+            (entry.disabled_by is None or entry.state is not ConfigEntryState.NOT_LOADED)
+            and entry.data.get("source_entry_id") == source_entry_id
             for entry in hass.config_entries.async_entries(domain)
         ):
             raise MigrationError("dependent_integration_active")
@@ -82,14 +84,18 @@ async def async_prepare_migration(hass, source_entry_id):
     else:
         runtime = hass.data.get("ha_strava", {}).get(source_entry_id)
         session = getattr(runtime, "oauth_session", None)
-        if not isinstance(session, OAuth2Session):
+        if not isinstance(session, OAuth2Session) or session.config_entry is not source:
             raise MigrationError("unsupported_source")
     try:
-        await session.async_ensure_token_valid()
-        client_id = session.implementation.client_id
-        secret = session.implementation.client_secret
+        client_id = getattr(session.implementation, "client_id", None)
+        secret = getattr(session.implementation, "client_secret", None)
         if strava_id(client_id) != client_id or not isinstance(secret, str) or not secret:
             raise MigrationError("unsupported_source")
+        if any(
+            entry.data.get("client_id") == client_id
+            for entry in hass.config_entries.async_entries(DOMAIN)
+        ):
+            raise MigrationError("shared_application_migration")
         for other in hass.config_entries.async_entries("ha_strava"):
             if other.entry_id == source_entry_id or other.disabled_by is not None:
                 continue
@@ -100,6 +106,7 @@ async def async_prepare_migration(hass, source_entry_id):
                 or peer_session.implementation.client_id == client_id
             ):
                 raise MigrationError("shared_application_migration")
+        await session.async_ensure_token_valid()
         token = _validated_token(session.token)
         expires = session.token.get("expires_at")
         if (
@@ -118,9 +125,40 @@ async def async_prepare_migration(hass, source_entry_id):
         token["scope"] = " ".join(scopes)
         budget = await async_get_budget(hass, client_id)
         athlete_id = await async_fetch_athlete(hass, token["access_token"], budget)
+        verifier = SubscriptionManager(hass, client_id, secret, None, budget)
+        remote = await verifier.request("GET")
+        if not isinstance(remote, list) or len(remote) > 1:
+            raise MigrationError("migration_subscription_unknown")
+        subscription = None
+        if remote:
+            item = remote[0]
+            callbacks = [
+                value.rstrip("/")
+                for mapping in (source.data, source.options)
+                for key, value in mapping.items()
+                if "callback" in key.lower() and isinstance(value, str)
+            ]
+            if (
+                not isinstance(item, dict)
+                or strava_id(item.get("id")) is None
+                or not isinstance(item.get("callback_url"), str)
+                or item["callback_url"].rstrip("/") not in callbacks
+            ):
+                raise MigrationError("migration_subscription_unknown")
+            subscription = {"id": strava_id(item["id"]), "callback_url": item["callback_url"]}
     except MigrationError:
         raise
-    except AccountVerificationError, ActivityError, OSError, ValueError, ClientError, TimeoutError:
+    except (
+        AccountVerificationError,
+        ActivityError,
+        OSError,
+        ValueError,
+        ClientError,
+        TimeoutError,
+        KeyError,
+        TypeError,
+        AttributeError,
+    ):
         raise MigrationError("migration_auth_invalid") from None
     if source.unique_id is not None and source.unique_id != athlete_id:
         raise MigrationError("wrong_account")
@@ -136,6 +174,7 @@ async def async_prepare_migration(hass, source_entry_id):
             "token": token,
             "granted_scopes": scopes,
             "migration_source_entry_id": source_entry_id,
+            "migration_remote_subscription": subscription,
         },
         secret,
     )
@@ -175,12 +214,60 @@ async def async_pause_source(hass, snapshot):
     }
     await store.async_save(record)
     if source.disabled_by is None:
-        await hass.config_entries.async_set_disabled_by(source.entry_id, ConfigEntryDisabler.USER)
-    if source.disabled_by is not ConfigEntryDisabler.USER:
+        paused = await hass.config_entries.async_set_disabled_by(
+            source.entry_id, ConfigEntryDisabler.USER
+        )
+        if not paused or source.state is not ConfigEntryState.NOT_LOADED:
+            await hass.config_entries.async_set_disabled_by(source.entry_id, None)
+            raise MigrationError("migration_pause_failed")
+    if (
+        source.disabled_by is not ConfigEntryDisabler.USER
+        or source.state is not ConfigEntryState.NOT_LOADED
+    ):
         raise MigrationError("migration_pause_failed")
+    current = source.data["token"]
+    token = _validated_token(current)
+    token["expires_at"] = current["expires_at"]
+    token.setdefault("scope", snapshot.data["token"]["scope"])
+    snapshot.data["token"] = token
     try:
         await store.async_save({**record, "phase": "paused"})
     except OSError:
         # No target has been created/refreshed/written yet: this rollback is safe.
         await hass.config_entries.async_set_disabled_by(source.entry_id, None)
         raise MigrationError("migration_storage_failed") from None
+
+
+async def async_takeover_for_entry(hass, entry):
+    """A callback replacement is allowed only for the confirmed paused source."""
+    identifier = entry.data.get("migration_source_entry_id")
+    if identifier is None:
+        return None
+    source = hass.config_entries.async_get_entry(identifier)
+    record = await migration_store(hass, identifier).async_load()
+    if (
+        source is None
+        or source.domain != "ha_strava"
+        or source.disabled_by is not ConfigEntryDisabler.USER
+        or source.state is not ConfigEntryState.NOT_LOADED
+        or not isinstance(record, dict)
+        or record.get("phase") not in ("prepared", "paused")
+        or record.get("client_id") != entry.data["client_id"]
+        or record.get("athlete_id") != entry.data["athlete_id"]
+    ):
+        return None
+    return entry.data.get("migration_remote_subscription")
+
+
+async def async_mark_migration_complete(hass, entry):
+    identifier = entry.data.get("migration_source_entry_id")
+    if identifier is None:
+        return
+    store = migration_store(hass, identifier)
+    record = await store.async_load()
+    if (
+        isinstance(record, dict)
+        and record.get("client_id") == entry.data["client_id"]
+        and record.get("athlete_id") == entry.data["athlete_id"]
+    ):
+        await store.async_save({**record, "phase": "active", "target_entry_id": entry.entry_id})

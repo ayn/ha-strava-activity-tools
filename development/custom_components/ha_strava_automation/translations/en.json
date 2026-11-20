@@ -54,7 +54,9 @@
       "migration_credentials_conflict": "Conflicting app credentials exist. Resolve them before transferring this connection.",
       "migration_pause_failed": "The old connection could not be paused safely. No target was created.",
       "migration_storage_failed": "The migration record could not be saved. The old connection was restored.",
-      "migration_confirmation_required": "Confirm pausing the old connection before proceeding."
+      "migration_confirmation_required": "Confirm pausing the old connection before proceeding.",
+      "shared_application_migration": "This API app is shared with another local account. Give each integration its own API app before migrating.",
+      "migration_subscription_unknown": "The existing remote callback could not be matched to this connection. The old connection has not been paused. Verify its webhook configuration before retrying."
     }
   },
   "entity": {
@@ -104,8 +106,8 @@
   "options": {
     "step": {
       "init": {
-        "title": "Strava Activity Tools settings",
-        "description": "Choose track shoes from this Strava account. Updating the pair takes effect immediately for previews. Preview only blocks Strava writes; calendar and track-shoe suggestions always remain read-only. {shoe_catalog_status}",
+        "title": "Strava Automation settings",
+        "description": "Choose track shoes from this Strava account. Changes apply immediately. Preview only blocks every Strava write, including queued jobs. Shoes are assigned only to a confidently identified workout on a track. {shoe_catalog_status}",
         "data": {
           "preview_only": "Preview only (block all Strava writes)",
           "track_shoes": "Track shoes",

@@ -81,6 +81,7 @@ def oauth_responses(aioclient_mock):
             json=athlete_body if athlete_body is not None else {"id": athlete},
             status=athlete_status,
         )
+        aioclient_mock.get("https://www.strava.com/api/v3/push_subscriptions", json=[])
 
     return register
 

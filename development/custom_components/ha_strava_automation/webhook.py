@@ -75,6 +75,8 @@ class WebhookReceiver:
         if None in values:
             return web.json_response({}, status=400)
         subscription, owner, identifier, stamp = values
+        if self.subscription_id is None and owner in self.targets:
+            return web.json_response({}, status=503)
         if (
             subscription != self.subscription_id
             or owner not in self.targets

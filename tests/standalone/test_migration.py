@@ -128,6 +128,24 @@ async def test_active_companion_blocks_handover_before_pause(hass, source):
     assert source.disabled_by is None
 
 
+async def test_disabled_companion_that_failed_to_unload_still_blocks(hass, source):
+    from homeassistant.config_entries import ConfigEntryState
+
+    companion = MockConfigEntry(
+        domain="strava_activity_tools",
+        data={"source_entry_id": source.entry_id, "athlete_id": "42"},
+        disabled_by=ConfigEntryDisabler.USER,
+    )
+    companion.add_to_hass(hass)
+    companion._async_set_state(hass, ConfigEntryState.LOADED, None)
+    try:
+        with pytest.raises(MigrationError, match="dependent_integration_active"):
+            await async_prepare_migration(hass, source.entry_id)
+    finally:
+        companion._async_set_state(hass, ConfigEntryState.NOT_LOADED, None)
+    assert source.disabled_by is None
+
+
 async def test_native_flow_requires_confirmation_then_transfers_same_app(hass, source):
     result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": "user"})
     result = await hass.config_entries.flow.async_configure(
@@ -198,3 +216,35 @@ async def test_shared_source_app_must_not_lose_other_athletes_callback(hass, sou
         await async_prepare_migration(hass, source.entry_id)
     assert source.disabled_by is None
     assert other.disabled_by is None
+
+
+async def test_unknown_remote_callback_is_not_implicitly_adopted(
+    hass, source, aioclient_mock, oauth_responses
+):
+    aioclient_mock.clear_requests()
+    oauth_responses()
+    aioclient_mock.clear_requests()
+    aioclient_mock.get("https://www.strava.com/api/v3/athlete", json={"id": 42})
+    aioclient_mock.get(
+        "https://www.strava.com/api/v3/push_subscriptions",
+        json=[{"id": 12, "callback_url": "https://another.example.test/callback"}],
+    )
+    with pytest.raises(MigrationError, match="migration_subscription_unknown"):
+        await async_prepare_migration(hass, source.entry_id)
+    assert source.disabled_by is None
+
+
+async def test_verified_source_callback_can_be_recorded_for_explicit_handover(
+    hass, source, aioclient_mock
+):
+    callback = "https://old.example.test/api/strava/webhook"
+    hass.config_entries.async_update_entry(source, data={**source.data, "callback_url": callback})
+    aioclient_mock.clear_requests()
+    aioclient_mock.get("https://www.strava.com/api/v3/athlete", json={"id": 42})
+    aioclient_mock.get(
+        "https://www.strava.com/api/v3/push_subscriptions",
+        json=[{"id": 12, "callback_url": callback}],
+    )
+    result = await async_prepare_migration(hass, source.entry_id)
+    assert result.data["migration_remote_subscription"] == {"id": "12", "callback_url": callback}
+    assert source.disabled_by is None

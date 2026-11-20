@@ -7,6 +7,7 @@ import secrets
 from aiohttp import ClientError
 from homeassistant.components import webhook
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.network import NoURLAvailableError
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 from yarl import URL
@@ -74,6 +75,12 @@ class SubscriptionManager:
     async def _callback_url(self):
         if self.record["callback_url"] is not None:
             return self.record["callback_url"]
+        try:
+            return webhook.async_generate_url(
+                self.hass, self.record["webhook_id"], allow_internal=False
+            )
+        except NoURLAvailableError:
+            pass
         if "cloud" in self.hass.config.components:
             from homeassistant.components import cloud
 
@@ -81,9 +88,7 @@ class SubscriptionManager:
                 return await cloud.async_get_or_create_cloudhook(
                     self.hass, self.record["webhook_id"]
                 )
-        return webhook.async_generate_url(
-            self.hass, self.record["webhook_id"], allow_internal=False
-        )
+        raise NoURLAvailableError
 
     async def request(self, method, identifier=None, **fields):
         """Never expose request URLs/errors: subscription queries contain app secrets."""
@@ -108,15 +113,30 @@ class SubscriptionManager:
                     return None if response.status == 204 else await response.json()
         except ActivityError:
             raise
-        except OSError:
-            raise ActivityError("job_storage_unavailable") from None
         except ClientError, TimeoutError, ValueError:
             raise ActivityError("upstream_unavailable") from None
+        except OSError:
+            raise ActivityError("job_storage_unavailable") from None
 
-    async def _ensure_remote(self):
+    async def _ensure_remote(self, takeover=None):
         records = await self.request("GET")
         if not isinstance(records, list) or len(records) > 1:
             raise ActivityError("invalid_subscription_response")
+        if (
+            records
+            and isinstance(records[0], dict)
+            and records[0].get("callback_url") != self.record["callback_url"]
+        ):
+            item = records[0]
+            if (
+                not isinstance(takeover, dict)
+                or len(self.targets) != 1
+                or strava_id(item.get("id")) != takeover.get("id")
+                or item.get("callback_url") != takeover.get("callback_url")
+            ):
+                raise ActivityError("subscription_conflict")
+            await self.request("DELETE", identifier=takeover["id"])
+            records = []
         if records:
             item = records[0]
             if (
@@ -131,6 +151,7 @@ class SubscriptionManager:
                 raise ActivityError("subscription_conflict")
             identifier = strava_id(item["id"])
         else:
+            self.receiver.subscription_id = None
             item = await self.request(
                 "POST",
                 callback_url=self.record["callback_url"],
@@ -144,7 +165,7 @@ class SubscriptionManager:
         self.record = record
         self.receiver.subscription_id = identifier
 
-    async def connect(self, athlete_id, accept):
+    async def connect(self, athlete_id, accept, *, takeover=None):
         async with self.lock:
             if athlete_id in self.targets:
                 raise ActivityError("duplicate_account")
@@ -166,7 +187,7 @@ class SubscriptionManager:
                 )
                 self.registered = True
             try:
-                await self._ensure_remote()
+                await self._ensure_remote(takeover)
             except Exception:
                 self._disconnect(athlete_id)
                 raise
@@ -192,6 +213,7 @@ class SubscriptionManager:
                 item = records[0]
                 if (
                     not isinstance(item, dict)
+                    or strava_id(item.get("id")) is None
                     or item.get("callback_url") != self.record["callback_url"]
                     or strava_id(item.get("id")) != self.record["subscription_id"]
                 ):

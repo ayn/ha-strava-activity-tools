@@ -356,5 +356,27 @@
         }
       }
     }
+  },
+  "adopt_activity_tools_state": {
+    "name": "Adopt stopped Activity Tools state",
+    "description": "Advanced administrator handover for a confirmed migrated account in preview mode. Copies validated receipts and shoe settings from a disabled, unloaded Activity Tools entry; never enables writes or copies credentials.",
+    "fields": {
+      "config_entry_id": {
+        "name": "New Strava Automation account",
+        "required": true,
+        "selector": {
+          "config_entry": {
+            "integration": "ha_strava_automation"
+          }
+        }
+      },
+      "source_entry_id": {
+        "name": "Disabled Activity Tools entry ID",
+        "required": true,
+        "selector": {
+          "text": {}
+        }
+      }
+    }
   }
 }

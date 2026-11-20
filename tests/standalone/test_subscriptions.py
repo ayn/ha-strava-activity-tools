@@ -110,3 +110,22 @@ async def test_explicit_last_owner_cleanup_checks_remote_ownership(manager):
     assert not remote
     assert calls[-2:] == ["GET", "DELETE"]
     assert store.data["subscription_id"] is None
+
+
+async def test_explicit_handover_replaces_only_the_exact_verified_old_callback(manager):
+    manager, _, remote, calls = manager
+    old = {"id": "99", "callback_url": "https://old.example.test/api/strava/webhook"}
+    remote.append({"id": 99, "callback_url": old["callback_url"]})
+    await manager.connect("42", AsyncMock(), takeover=old)
+    assert calls == ["GET", "DELETE", "POST"]
+    assert remote[0]["callback_url"] == manager.record["callback_url"]
+
+
+async def test_handover_rejects_changed_remote_id_without_deleting_it(manager):
+    manager, _, remote, calls = manager
+    old = {"id": "98", "callback_url": "https://old.example.test/api/strava/webhook"}
+    remote.append({"id": 99, "callback_url": old["callback_url"]})
+    with pytest.raises(ActivityError, match="subscription_conflict"):
+        await manager.connect("42", AsyncMock(), takeover=old)
+    assert calls == ["GET"]
+    assert remote[0]["id"] == 99

@@ -60,6 +60,8 @@ class JobWorker:
         entry: ConfigEntry,
         execute: Callable[[dict], Awaitable[dict]],
         journal: RunJournal | None = None,
+        *,
+        start_paused: bool = False,
     ) -> None:
         self.hass, self.entry = hass, entry
         self.journal = journal
@@ -90,6 +92,7 @@ class JobWorker:
         self._cancel_timer: Callable[[], None] | None = None
         self._task: asyncio.Task | None = None
         self.closed = False
+        self.ready = not start_paused
         entry.async_on_unload(hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, self._shutdown))
 
     def _notification_id(self, key: str) -> str:
@@ -144,7 +147,7 @@ class JobWorker:
         if self._cancel_timer:
             self._cancel_timer()
             self._cancel_timer = None
-        if self.closed:
+        if self.closed or not self.ready:
             return
         when = self.queue.next_due()
         if when is None:
@@ -204,6 +207,8 @@ class JobWorker:
     async def process(self) -> None:
         if self.closed:
             raise ActivityError("worker_stopped")
+        if not self.ready:
+            return
         if self._task is None or self._task.done():
             self._task = self.entry.async_create_background_task(
                 self.hass, self._drain(), f"{DOMAIN}_worker"
@@ -253,7 +258,12 @@ class JobWorker:
             ],
             "blocked_until": self.queue.blocked_until,
             "stopped": self.closed,
+            "paused": not self.ready,
         }
+
+    def resume(self) -> None:
+        self.ready = True
+        self.arm()
 
     async def _shutdown(self, _event: Any) -> None:
         await self.close()

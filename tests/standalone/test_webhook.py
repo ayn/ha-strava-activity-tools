@@ -152,3 +152,25 @@ async def test_oversized_body_is_rejected_before_queue(receiver):
     result = await client.post(PATH, json=event(extra="x" * 20000))
     assert result.status == 413
     accept.assert_not_called()
+
+
+async def test_registration_window_requests_redelivery_instead_of_losing_event(receiver):
+    client, receiver, accept = receiver
+    receiver.subscription_id = None
+    result = await client.post(PATH, json=event())
+    assert result.status == 503
+    accept.assert_not_called()
+
+
+async def test_unicode_challenge_token_is_rejected_without_server_error(receiver):
+    client, _, accept = receiver
+    result = await client.get(
+        PATH,
+        params={
+            "hub.mode": "subscribe",
+            "hub.verify_token": "错误",
+            "hub.challenge": "do-not-echo",
+        },
+    )
+    assert result.status == 400
+    accept.assert_not_called()
