@@ -17,10 +17,11 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from .conftest import ATHLETE_URL, DOMAIN, GRANTED, TOKEN_URL, finish_auth, start_auth
 
 
-def account(hass, oauth_app, *, expired=False, athlete="42"):
+def account(hass, oauth_app, *, expired=False, athlete="42", entry_id=None):
     """A synthetic persisted account from this integration's own flow contract."""
     key, _ = oauth_app
     entry = MockConfigEntry(
+        **({"entry_id": entry_id} if entry_id else {}),
         domain=DOMAIN,
         unique_id=athlete,
         data={
@@ -36,7 +37,7 @@ def account(hass, oauth_app, *, expired=False, athlete="42"):
                 "scope": GRANTED,
             },
         },
-        options={"preview_only": True},
+        options={"preview_only": True, "webhook_enabled": False},
     )
     entry.add_to_hass(hass)
     return entry
@@ -134,7 +135,7 @@ async def test_runtime_setup_unload_reload_uses_native_session(
     assert entry.state is ConfigEntryState.LOADED
     assert entry.runtime_data.athlete_id == "42"
     assert "ha_strava" not in hass.config.components
-    assert not hass.services.has_service(DOMAIN, "update_activity")
+    assert hass.services.has_service(DOMAIN, "update_activity")
     assert await hass.config_entries.async_unload(entry.entry_id)
     assert not hasattr(entry, "runtime_data")
     assert await hass.config_entries.async_setup(entry.entry_id)

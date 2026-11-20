@@ -4,11 +4,34 @@
       "pick_implementation": {
         "title": "Connect Strava Automation",
         "description": "Use a Strava API app created for this integration. If you also use another Strava integration, give each a separate app. Activity read access is required; writes and profile access enable automation and gear features. New accounts start in preview mode.",
-        "data": {"implementation": "Strava API app"}
+        "data": {
+          "implementation": "Strava API app"
+        }
       },
       "reauth_confirm": {
         "title": "Reconnect your Strava account",
         "description": "Authorize the same athlete using the same Strava API app. Your existing options will be preserved."
+      },
+      "user": {
+        "title": "Strava Automation",
+        "menu_options": {
+          "new_account": "Connect with a separate Strava API app",
+          "migrate": "Migrate from ha_strava"
+        }
+      },
+      "migrate": {
+        "title": "Select the existing Strava connection",
+        "description": "Reuse its API app and authorization. No connection changes until you confirm. If Activity Tools is installed, pause its automations and disable it first.",
+        "data": {
+          "source_entry_id": "Existing ha_strava connection"
+        }
+      },
+      "migration_confirm": {
+        "title": "Transfer this Strava connection",
+        "description": "This pauses ha_strava before transferring OAuth ownership. Your old entry remains disabled for rollback. The new integration starts in preview mode. Custom automations and provider sensors are not automatically migrated.",
+        "data": {
+          "confirm_pause": "Pause ha_strava and transfer this connection"
+        }
       }
     },
     "abort": {
@@ -18,6 +41,81 @@
       "cannot_connect": "Unable to verify your Strava account right now. Try again later.",
       "wrong_account": "Authorize the same athlete as the existing connection. Nothing was changed.",
       "wrong_application": "Use the same Strava API app as the existing connection. Nothing was changed."
+    },
+    "error": {
+      "unsupported_source": "This connection does not expose a supported native HA OAuth session. Reconnect it before migrating.",
+      "source_not_loaded": "Enable the old connection first, or resume its recorded migration.",
+      "dependent_integration_active": "Pause dependent Activity Tools automations, let active jobs finish, and disable Activity Tools before migrating.",
+      "migration_credentials_missing": "The application credentials for the paused migration are missing. Restore them before resuming.",
+      "migration_scope_unknown": "The existing granted permissions could not be verified. Reauthorize the old provider or use fresh consent before migrating. The source has not been paused.",
+      "migration_auth_invalid": "The existing authorization could not be verified. Reconnect the old provider before migrating.",
+      "wrong_account": "The authenticated athlete changed or does not match this connection. Nothing was transferred.",
+      "already_configured": "This athlete already has a Strava Automation connection.",
+      "migration_credentials_conflict": "Conflicting app credentials exist. Resolve them before transferring this connection.",
+      "migration_pause_failed": "The old connection could not be paused safely. No target was created.",
+      "migration_storage_failed": "The migration record could not be saved. The old connection was restored.",
+      "migration_confirmation_required": "Confirm pausing the old connection before proceeding."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "latest_preview": {
+        "name": "Latest preview",
+        "state": {
+          "updated": "Updated",
+          "unchanged": "No changes needed",
+          "would_update": "Would update",
+          "suggested": "Change suggested",
+          "abstained": "No confident suggestion",
+          "delivered": "Activity received",
+          "skipped_ineligible": "Skipped: activity not eligible",
+          "queued": "Waiting to retry",
+          "failed": "Needs attention",
+          "matches": "Rule matched",
+          "no_match": "Rule did not match",
+          "track": "Track detected",
+          "not_track": "Track not confirmed",
+          "unknown": "Unknown result",
+          "no_activity": "Nothing recorded yet"
+        }
+      },
+      "latest_run": {
+        "name": "Latest run",
+        "state": {
+          "updated": "Updated",
+          "unchanged": "No changes needed",
+          "would_update": "Would update",
+          "suggested": "Change suggested",
+          "abstained": "No confident suggestion",
+          "delivered": "Activity received",
+          "skipped_ineligible": "Skipped: activity not eligible",
+          "queued": "Waiting to retry",
+          "failed": "Needs attention",
+          "matches": "Rule matched",
+          "no_match": "Rule did not match",
+          "track": "Track detected",
+          "not_track": "Track not confirmed",
+          "unknown": "Unknown result",
+          "no_activity": "Nothing recorded yet"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Strava Activity Tools settings",
+        "description": "Choose track shoes from this Strava account. Updating the pair takes effect immediately for previews. Preview only blocks Strava writes; calendar and track-shoe suggestions always remain read-only. {shoe_catalog_status}",
+        "data": {
+          "preview_only": "Preview only (block all Strava writes)",
+          "track_shoes": "Track shoes",
+          "reauthorize_strava": "Request Strava reauthorization (profile and activity editing)"
+        }
+      }
+    },
+    "error": {
+      "shoe_catalog_unavailable": "Could not load your Strava shoes. Existing choices are kept; retry when the Strava account is available.",
+      "invalid_shoes": "Choose an active shoe from this Strava account."
     }
   }
 }

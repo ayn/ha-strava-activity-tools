@@ -114,15 +114,19 @@ class StravaOAuthImplementation(AuthImplementation):
             raise OAuth2TokenRequestConnectionError(domain=DOMAIN) from None
 
 
-async def async_fetch_athlete(hass: HomeAssistant, access_token: str) -> str:
+async def async_fetch_athlete(hass: HomeAssistant, access_token: str, budget=None) -> str:
     """Verify identity against the authenticated athlete endpoint, not form data."""
     try:
+        if budget is not None:
+            await budget.reserve()
         async with asyncio.timeout(20):
             async with async_get_clientsession(hass).get(
                 ATHLETE_URL,
                 headers={"Authorization": f"Bearer {access_token}"},
                 allow_redirects=False,
             ) as response:
+                if budget is not None:
+                    await budget.observe(response.headers, response.status)
                 if response.status in (401, 403):
                     raise AccountVerificationError("invalid_auth")
                 if response.status != 200:
@@ -130,7 +134,7 @@ async def async_fetch_athlete(hass: HomeAssistant, access_token: str) -> str:
                 body = await response.json()
     except AccountVerificationError:
         raise
-    except ClientError, TimeoutError, ValueError:
+    except ClientError, TimeoutError, ValueError, OSError:
         raise AccountVerificationError("cannot_connect") from None
     identifier = body.get("id") if isinstance(body, dict) else None
     if type(identifier) is not int or not 0 < identifier < 2**63:

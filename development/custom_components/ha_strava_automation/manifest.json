@@ -3,7 +3,7 @@
   "name": "Strava Automation",
   "codeowners": ["@ayn"],
   "config_flow": true,
-  "dependencies": ["application_credentials"],
+  "dependencies": ["application_credentials", "persistent_notification", "webhook"],
   "documentation": "https://github.com/ayn/ha-strava-activity-tools",
   "integration_type": "service",
   "iot_class": "cloud_push",
