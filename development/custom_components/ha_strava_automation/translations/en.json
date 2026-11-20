@@ -1,0 +1,23 @@
+{
+  "config": {
+    "step": {
+      "pick_implementation": {
+        "title": "Connect Strava Automation",
+        "description": "Use a Strava API app created for this integration. If you also use another Strava integration, give each a separate app. Activity read access is required; writes and profile access enable automation and gear features. New accounts start in preview mode.",
+        "data": {"implementation": "Strava API app"}
+      },
+      "reauth_confirm": {
+        "title": "Reconnect your Strava account",
+        "description": "Authorize the same athlete using the same Strava API app. Your existing options will be preserved."
+      }
+    },
+    "abort": {
+      "missing_activity_scope": "Activity read access was not granted. Reconnect and allow activity access.",
+      "invalid_account": "Strava did not return a valid athlete identity. No account was saved.",
+      "invalid_auth": "Strava rejected the authorization. Reconnect your account.",
+      "cannot_connect": "Unable to verify your Strava account right now. Try again later.",
+      "wrong_account": "Authorize the same athlete as the existing connection. Nothing was changed.",
+      "wrong_application": "Use the same Strava API app as the existing connection. Nothing was changed."
+    }
+  }
+}
