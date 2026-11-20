@@ -182,6 +182,7 @@ async def async_setup(hass: HomeAssistant, config: dict[str, Any]) -> bool:
             raise HomeAssistantError(err.category) from None
 
     async def handle(call: ServiceCall) -> dict[str, Any]:
+        history_operation = "suggest_workout" if call.service == "process_workout" else call.service
         runtime = hass.data[DOMAIN].get(call.data["config_entry_id"])
         entry = hass.config_entries.async_get_entry(call.data["config_entry_id"])
         preview = (
@@ -210,7 +211,7 @@ async def async_setup(hass: HomeAssistant, config: dict[str, Any]) -> bool:
             # A rejected foreign-owner response must never expose that activity in history.
             if record and str(err) != "wrong_athlete":
                 runtime.journal.record(
-                    call.service,
+                    history_operation,
                     call.data["activity_id"],
                     preview,
                     {
@@ -232,7 +233,7 @@ async def async_setup(hass: HomeAssistant, config: dict[str, Any]) -> bool:
             else:
                 result_for_history = result
             runtime.journal.record(
-                call.service, call.data["activity_id"], preview, result_for_history
+                history_operation, call.data["activity_id"], preview, result_for_history
             )
         return result
 

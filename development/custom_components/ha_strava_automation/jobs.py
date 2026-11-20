@@ -31,6 +31,7 @@ RETRYABLE = frozenset(
         "activity_changed_retry",
         "verification_failed",
         "activity_not_found",
+        "calendar_unavailable",
     }
 )
 SAFE_ERRORS = RETRYABLE | frozenset(

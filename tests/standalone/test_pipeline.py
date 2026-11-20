@@ -237,3 +237,57 @@ async def test_successful_update_recovery_does_not_overwrite_new_manual_edit(
     await entry.runtime_data.worker.submit("update", "123", params)
     assert activity["workout_type"] == 1
     assert writes == []
+
+
+async def test_calendar_outage_retries_saved_workout_without_another_webhook(
+    hass, pipeline, freezer
+):
+    from homeassistant.exceptions import HomeAssistantError
+
+    entry, _, _, activity, writes, _ = pipeline
+    available = False
+
+    async def calendar(_call):
+        if not available:
+            raise HomeAssistantError("Synthetic calendar unavailable")
+        today = dt_util.utcnow()
+        return {
+            "calendar.training": {
+                "events": [
+                    {
+                        "start": today.date().isoformat(),
+                        "end": (today + timedelta(days=1)).date().isoformat(),
+                        "summary": "4 x 400m",
+                    }
+                ]
+            }
+        }
+
+    hass.services.async_register(
+        "calendar", "get_events", calendar, supports_response=SupportsResponse.ONLY
+    )
+    result = await hass.services.async_call(
+        DOMAIN,
+        "process_workout",
+        {
+            "config_entry_id": entry.entry_id,
+            "activity_id": "123",
+            "calendar_entity": "calendar.training",
+            "dry_run": False,
+        },
+        blocking=True,
+        return_response=True,
+    )
+    assert result["status"] == "queued"
+    assert not writes
+    assert (
+        entry.runtime_data.worker.queue.jobs[result["job_id"]]["last_error"]
+        == "calendar_unavailable"
+    )
+    available = True
+    freezer.tick(61)
+    async_fire_time_changed(hass, dt_util.utcnow())
+    await hass.async_block_till_done(wait_background_tasks=True)
+    assert entry.runtime_data.worker.queue.jobs[result["job_id"]]["status"] == "done"
+    assert activity["workout_type"] == 3
+    assert writes == [{"workout_type": "3"}]

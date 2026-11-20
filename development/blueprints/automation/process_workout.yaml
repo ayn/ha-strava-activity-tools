@@ -1,0 +1,46 @@
+blueprint:
+  name: Strava Automation - classify workouts and assign track shoes
+  description: >-
+    Match a run to your training calendar and recorded interval laps. A confident
+    match can tag it as Workout; configured track shoes additionally require track
+    evidence. Indoor workouts keep their shoes. Live work and retries are durable.
+    Use the workout_processed event for short-run muting after classification.
+    Preview is enabled by default.
+  source_url: https://github.com/ayn/ha-strava-automation/blob/main/blueprints/automation/process_workout.yaml
+  domain: automation
+  homeassistant:
+    min_version: 2026.10.4
+  input:
+    config_entry_id:
+      name: Strava Automation account
+      selector:
+        config_entry:
+          integration: ha_strava_automation
+    calendar_entity:
+      name: Training calendar
+      selector:
+        entity:
+          domain: calendar
+    dry_run:
+      name: Preview only
+      default: true
+      selector:
+        boolean:
+triggers:
+  - trigger: event
+    event_type: ha_strava_automation_activity_ready
+    event_data:
+      config_entry_id: !input config_entry_id
+conditions:
+  - condition: template
+    value_template: "{{ trigger.event.data.sport_type in ['Run', 'TrailRun', 'VirtualRun'] }}"
+actions:
+  - action: ha_strava_automation.process_workout
+    data:
+      config_entry_id: !input config_entry_id
+      activity_id: "{{ trigger.event.data.activity_id }}"
+      calendar_entity: !input calendar_entity
+      dry_run: !input dry_run
+    response_variable: workout_result
+mode: queued
+max: 25
