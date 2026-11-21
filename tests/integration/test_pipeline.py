@@ -34,6 +34,7 @@ async def pipeline(
         "manual": False,
         "description": "Keep these independent notes",
         "start_date": dt_util.utcnow().isoformat(),
+        "timezone": "UTC",
         "laps": [{"distance": 400, "moving_time": 80 if i % 2 == 0 else 140} for i in range(8)],
     }
     remote, writes, requests = [], [], []
