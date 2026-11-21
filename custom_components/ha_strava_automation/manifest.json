@@ -5,6 +5,9 @@
     "cloud",
     "recorder"
   ],
+  "categories": [
+    "health_wellbeing"
+  ],
   "codeowners": [
     "@ayn"
   ],
