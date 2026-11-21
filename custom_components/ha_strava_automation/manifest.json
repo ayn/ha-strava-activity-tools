@@ -1,0 +1,23 @@
+{
+  "domain": "ha_strava_automation",
+  "name": "Strava Automation",
+  "after_dependencies": [
+    "cloud",
+    "recorder"
+  ],
+  "codeowners": [
+    "@ayn"
+  ],
+  "config_flow": true,
+  "dependencies": [
+    "application_credentials",
+    "persistent_notification",
+    "webhook"
+  ],
+  "documentation": "https://github.com/ayn/ha-strava-automation",
+  "integration_type": "service",
+  "iot_class": "cloud_push",
+  "issue_tracker": "https://github.com/ayn/ha-strava-automation/issues",
+  "requirements": [],
+  "version": "0.7.0"
+}

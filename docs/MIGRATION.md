@@ -1,31 +1,46 @@
-# Migrating from the local Activity Tools prototype
+# Connection migration from ha_strava
 
-The public repository is `ayn/ha-strava-activity-tools`; its integration domain,
-actions, and events use `strava_activity_tools`. No new Strava OAuth application
-or webhook subscription is needed. The existing `ha_strava` entry still owns OAuth.
+Version 0.7.0 replaces the companion architecture with independent Strava
+Automation. It does not depend on pending provider PRs. A normal new installation
+uses its own Strava API app and native HA authorization.
 
-1. Install the new integration, then restart Home Assistant.
-2. Save copies of the existing automation configurations and note their enabled states.
-   Disable consumers of `activity_tools_activity_ready` and disable the old
-   **Activity Tools** integration. Leave its files and config entry in place for rollback.
-3. Add **Strava Activity Tools** with the same Strava source and athlete ID. Select
-   the disabled legacy entry in the optional migration field.
-4. Completed/skipped receipts are copied using HA's native Store API. The source store
-   remains unchanged. Ownership, record integrity, and capacity are checked before saving;
-   unfinished legacy jobs require review rather than automatic replay. Retention remains
-   seven days. Setup defaults to preview-only and preserves the configured track shoes.
-5. Replace action prefixes `activity_tools.` with `strava_activity_tools.`. Replace
-   event prefixes `activity_tools_` with `strava_activity_tools_`, and update each consumer's
-   `config_entry_id` to the new entry ID. Update recorder event exclusions if configured.
-   Search automations, scripts, scenes, dashboards, and other consumers for stale references.
-6. Check loaded state and receipts; test read-only actions. Restore the previous preview
-   setting and enable only the migrated consumers. Keep any older external writer disabled.
+**Coexistence:** keep the other integration with a different app/client ID.
+Strava supports one remote webhook subscription per app, so two independent
+integrations cannot share that callback. Each integration also needs its own
+refresh owner.
 
-If setup fails, keep the new entry and consumers disabled, restore the saved automation
-configs, and re-enable the old entry. Never run both writers. New work performed after
-cutover is not copied back to the legacy store; review those receipts before rolling back
-following live writes. Do not edit `.storage` files directly.
+## Reuse an existing app and authorization
 
-A later HACS/Marketplace installation of this same repository retains the public domain
-and config entry. This repository supports custom-repository installation; it is not yet
-listed in a default store catalog.
+1. Take a current HA backup and save affected automation/dashboard configurations.
+   Pause dependent automations without cancelling active writes; let existing work
+   finish. Disable/unload the old Activity Tools companion if present.
+2. Keep the selected `ha_strava` connection loaded. Add **Strava Automation** and
+   choose **Migrate from ha_strava**, then select that connection.
+3. The preflight verifies a native HA OAuth session, authenticated athlete, grants,
+   app credentials and existing callback. Shared or unverified apps/callbacks are
+   refused before disabling the old provider. Unknown grants require fresh consent;
+   they are never guessed from what a previous integration requested.
+4. Confirm the handover. The flow imports native Application Credentials, records
+   recoverable migration intent and stops the old refresh owner before creating
+   the new connection. Tokens remain inside HA; no token export is necessary.
+5. The new connection starts in preview. It may replace only the exact verified old
+   callback after the old connection is stopped. Setup must fully succeed before
+   saved live work can execute. A temporary registration failure retries setup.
+6. Update consumers explicitly. Provider activity/photo sensors are not recreated.
+   Existing custom automations/dashboard entities/listeners are not automatically
+   rewritten. See [the agent guide](AGENT_SETUP.md) for a requested MCP handover
+   of Activity Tools receipts/settings; there is no separate companion wizard.
+7. Verify a read-only owned activity, account options, receipt counts, callback
+   health and new rule references. Enable writes only when the user authorizes it
+   and one writer owns the account. Remove old code/entries only after confirming
+   their cleanup cannot revoke the migrated authorization or delete the new callback.
+
+The disabled source remains initially for recovery. Do not blindly re-enable it
+after the new owner refreshes its token: its saved refresh token may be stale.
+Rollback must first stop the new owner and explicitly restore authorization and
+callback ownership; otherwise reconnect the old provider with fresh consent.
+A full HA restore affects unrelated changes and needs separate authorization.
+
+If preflight cannot establish scopes/callback identity, it preserves the old
+connection and reports why. Do not bypass that guard or invent permissions.
+Use a separate app, or complete fresh consent, if a safe handover cannot be proven.

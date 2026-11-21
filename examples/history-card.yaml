@@ -5,7 +5,7 @@ content: |-
   {% set labels = {'hide_from_home': 'Hide from feed', 'gear_id': 'Gear',
       'workout_type': 'Workout type', 'description': 'Description', 'name': 'Title',
       'trainer': 'Indoor', 'commute': 'Commute', 'sport_type': 'Sport'} %}
-  {% for entity in integration_entities('strava_activity_tools') | sort %}
+  {% for entity in integration_entities('ha_strava_automation') | sort %}
   {% if state_attr(entity, 'stream') in ['previews', 'runs'] %}
   {% set found.value = true %}
   ### {{ state_attr(entity, 'friendly_name') | e }}
