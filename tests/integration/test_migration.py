@@ -249,3 +249,48 @@ async def test_verified_source_callback_can_be_recorded_for_explicit_handover(
     result = await async_prepare_migration(hass, source.entry_id)
     assert result.data["migration_remote_subscription"] == {"id": "12", "callback_url": callback}
     assert source.disabled_by is None
+
+
+@pytest.mark.parametrize(
+    "host,path,registered,accepted",
+    [
+        ("ha.example.test", "/api/strava/webhook", True, True),
+        ("other.example.test", "/api/strava/webhook", True, False),
+        ("ha.example.test", "/api/strava/webhook", False, False),
+        ("ha.example.test", "/api/strava/webhook-extra", True, False),
+        ("ha.example.test", "/api/strava/webhook?extra=1", True, False),
+        ("ha.example.test:444", "/api/strava/webhook", True, False),
+    ],
+)
+async def test_documented_callback_requires_configured_origin_and_registered_exact_route(
+    hass, source, aioclient_mock, host, path, registered, accepted
+):
+    from aiohttp import web
+    from homeassistant.components.http import HomeAssistantView
+
+    hass.config.external_url = "https://ha.example.test"
+    if registered:
+
+        class SyntheticLegacyWebhook(HomeAssistantView):
+            url = "/api/strava/webhook"
+            name = "api:synthetic_legacy_webhook"
+            requires_auth = False
+
+            async def post(self, request):
+                return web.Response()
+
+        hass.http.register_view(SyntheticLegacyWebhook)
+    callback = f"https://{host}{path}"
+    aioclient_mock.clear_requests()
+    aioclient_mock.get("https://www.strava.com/api/v3/athlete", json={"id": 42})
+    aioclient_mock.get(
+        "https://www.strava.com/api/v3/push_subscriptions",
+        json=[{"id": 12, "callback_url": callback}],
+    )
+    if accepted:
+        result = await async_prepare_migration(hass, source.entry_id)
+        assert result.data["migration_remote_subscription"]["callback_url"] == callback
+    else:
+        with pytest.raises(MigrationError, match="migration_subscription_unknown"):
+            await async_prepare_migration(hass, source.entry_id)
+    assert source.disabled_by is None

@@ -11,13 +11,21 @@ refresh owner.
 
 ## Reuse an existing app and authorization
 
+For an existing Activity Tools installation, Marketplace may require removing the
+old config entry before uninstalling/reinstalling its renamed repository. Preserve
+terminal receipts through [the advanced agent handover](AGENT_SETUP.md#marketplace-domain-rename)
+first. Do not delete an entry containing pending/unreviewed work or bypass the
+store guard. A new installation does not need this step.
+
 1. Take a current HA backup and save affected automation/dashboard configurations.
    Pause dependent automations without cancelling active writes; let existing work
    finish. Disable/unload the old Activity Tools companion if present.
 2. Keep the selected `ha_strava` connection loaded. Add **Strava Automation** and
    choose **Migrate from ha_strava**, then select that connection.
 3. The preflight verifies a native HA OAuth session, authenticated athlete, grants,
-   app credentials and existing callback. Shared or unverified apps/callbacks are
+   app credentials and existing callback. Callback identity uses saved connection
+   metadata, or the documented exact legacy route registered on the configured
+   HTTPS HA origin. A hostname match alone is insufficient. Shared or unverified apps/callbacks are
    refused before disabling the old provider. Unknown grants require fresh consent;
    they are never guessed from what a previous integration requested.
 4. Confirm the handover. The flow imports native Application Credentials, records

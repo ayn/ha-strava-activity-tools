@@ -90,6 +90,7 @@ async def test_enabled_source_is_never_copied_while_it_can_write(hass, adoption)
             {"activity_id": "123", "changes": {"hide_from_home": True}, "dry_run": False},
         ),
         ("adopt_activity_tools_state", {"source_entry_id": "legacy"}),
+        ("import_completed_jobs", {"expected_athlete_id": "42", "receipts": {}}),
     ],
 )
 async def test_nonadmin_cannot_read_write_or_adopt(

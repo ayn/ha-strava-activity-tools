@@ -308,6 +308,36 @@ async def async_setup(hass: HomeAssistant, config: dict[str, Any]) -> bool:
         ),
         supports_response=SupportsResponse.OPTIONAL,
     )
+
+    async def import_completed(call: ServiceCall) -> dict:
+        from .adoption import async_import_completed_jobs
+
+        try:
+            return await async_import_completed_jobs(
+                hass,
+                call.data["config_entry_id"],
+                call.data["expected_athlete_id"],
+                call.data["receipts"],
+            )
+        except ActivityError as err:
+            raise HomeAssistantError(str(err)) from None
+        except OSError:
+            raise HomeAssistantError("job_storage_unavailable") from None
+
+    async_register_admin_service(
+        hass,
+        DOMAIN,
+        "import_completed_jobs",
+        import_completed,
+        schema=vol.Schema(
+            {
+                vol.Required("config_entry_id"): str,
+                vol.Required("expected_athlete_id"): str,
+                vol.Required("receipts"): dict,
+            }
+        ),
+        supports_response=SupportsResponse.OPTIONAL,
+    )
     return True
 
 

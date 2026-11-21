@@ -378,5 +378,34 @@
         }
       }
     }
+  },
+  "import_completed_jobs": {
+    "name": "Import completed migration receipts",
+    "description": "Advanced admin handover when Marketplace requires removing the old companion entry first. Only validated done/skipped receipts are accepted for a verified migrated athlete in preview. Never imports pending work, writes to Strava or enables automation.",
+    "fields": {
+      "config_entry_id": {
+        "name": "Migrated Strava Automation account",
+        "required": true,
+        "selector": {
+          "config_entry": {
+            "integration": "ha_strava_automation"
+          }
+        }
+      },
+      "expected_athlete_id": {
+        "name": "Expected authenticated athlete ID",
+        "required": true,
+        "selector": {
+          "text": {}
+        }
+      },
+      "receipts": {
+        "name": "Validated terminal receipt records",
+        "required": true,
+        "selector": {
+          "object": {}
+        }
+      }
+    }
   }
 }
