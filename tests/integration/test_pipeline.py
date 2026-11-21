@@ -150,8 +150,9 @@ async def test_native_automation_tags_before_short_mute_and_preserves_notes(
     entry, client, path, activity, writes, _ = pipeline
 
     async def calendar(_call):
-        today = dt_util.utcnow().date().isoformat()
-        tomorrow = (dt_util.utcnow() + timedelta(days=1)).date().isoformat()
+        start = dt_util.parse_datetime(activity["start_date"])
+        today = start.date().isoformat()
+        tomorrow = (start + timedelta(days=1)).date().isoformat()
         return {
             "calendar.training": {
                 "events": [{"start": today, "end": tomorrow, "summary": "4 x 400m"}]
@@ -240,6 +241,7 @@ async def test_successful_update_recovery_does_not_overwrite_new_manual_edit(
     assert writes == []
 
 
+@pytest.mark.freeze_time("2026-02-10T23:59:30+00:00")
 async def test_calendar_outage_retries_saved_workout_without_another_webhook(
     hass, pipeline, freezer
 ):
@@ -251,7 +253,7 @@ async def test_calendar_outage_retries_saved_workout_without_another_webhook(
     async def calendar(_call):
         if not available:
             raise HomeAssistantError("Synthetic calendar unavailable")
-        today = dt_util.utcnow()
+        today = dt_util.parse_datetime(activity["start_date"])
         return {
             "calendar.training": {
                 "events": [

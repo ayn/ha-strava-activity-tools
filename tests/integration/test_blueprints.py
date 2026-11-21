@@ -36,7 +36,7 @@ async def test_blueprint_default_preview_is_visible_and_never_writes(
     (folder / source.name).write_text(source.read_text())
 
     async def calendar(_call):
-        today = dt_util.utcnow()
+        today = dt_util.parse_datetime(activity["start_date"])
         return {
             "calendar.training": {
                 "events": [
