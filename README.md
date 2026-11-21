@@ -14,6 +14,27 @@ Strava authorization and webhook; it does not require `ha_strava` or its pending
 PRs. Installation currently uses a **custom repository** in Marketplace/HACS,
 not the default catalog. Read the migration guide before upgrading an old setup.
 
+## Webhook access required
+
+Strava must be able to reach the integration's webhook over **public HTTPS**.
+Strava sends a GET request to verify the webhook during setup and POST requests
+to deliver activity events. Pick one way to make that endpoint reachable:
+
+- **Home Assistant Cloud (Nabu Casa).** Sign in to HA Cloud so the integration
+  can use a cloud webhook. You do not need to forward a port.
+- **Public tunnel or reverse proxy.** Use a public HTTPS endpoint such as
+  Tailscale Funnel or Cloudflare Tunnel and configure its URL as Home Assistant's
+  external URL.
+- **Your own public HTTPS URL.** Forward a port to Home Assistant or an HTTPS
+  reverse proxy and configure Home Assistant's external URL. Use dynamic DNS
+  if your public IP address changes.
+
+Use a trusted TLS certificate. Keep the generated `/api/webhook/…` path reachable
+for both methods without a browser login or challenge. A LAN address, private
+Tailscale access, or Tailscale Serve alone cannot receive Strava's requests.
+The `my.home-assistant.io` OAuth redirect only handles sign-in. Event delivery
+uses the separate webhook URL.
+
 ## What it does
 
 | Feature | Behavior |
@@ -46,14 +67,10 @@ metadata. Easy track laps alone do not justify workout shoes.
 3. In **Settings → Devices & services → Add integration → Strava Automation**,
    enter the app's Client ID and Secret using native HA Application Credentials,
    then approve access in Strava. Do not paste tokens into YAML or automations.
-4. Provide publicly reachable HTTPS for webhook GET/POST callbacks. An external
-   HA URL, public tunnel/reverse proxy, Tailscale Funnel, port forwarding with
-   DNS/TLS, or an HA Cloud webhook can work. Private Tailscale/Serve alone cannot.
-   Browser login/challenge pages must not block `/api/webhook/…`.
-5. Import a blueprint and select this account. Configure **Track shoes** in the
+4. Import a blueprint and select this account. Configure **Track shoes** in the
    integration's options if wanted. Review results using its history entities or
    the native [history card example](examples/history-card.yaml).
-6. New accounts and blueprints start in **preview**. To allow writes, disable
+5. New accounts and blueprints start in **preview**. To allow writes, disable
    Preview only in the integration **and** explicitly disable the automation's
    preview/dry-run setting after checking its suggestions.
 
