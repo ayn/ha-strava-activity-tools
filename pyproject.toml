@@ -1,6 +1,6 @@
 [project]
 name = "ha-strava-automation"
-version = "0.7.1"
+version = "0.7.2"
 description = "Independent Home Assistant integration for Strava automations"
 requires-python = ">=3.14"
 

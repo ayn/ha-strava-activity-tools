@@ -1,3 +1,11 @@
+# Cloud-only migration patch 0.7.2
+
+A native network regression reproduces migration with no configured external URL
+and an available HA Cloud remote UI origin. The source remains unchanged during
+preflight. Verification accepts that trusted origin only with the exact registered
+legacy POST route; foreign origins and unregistered routes still fail closed.
+The full suite passes 438 tests with 91.98% coverage.
+
 # Terminal-receipt handover patch 0.7.1
 
 Marketplace requires removing old-domain config entries before repository

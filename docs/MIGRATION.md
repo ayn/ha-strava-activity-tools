@@ -25,7 +25,8 @@ store guard. A new installation does not need this step.
 3. The preflight verifies a native HA OAuth session, authenticated athlete, grants,
    app credentials and existing callback. Callback identity uses saved connection
    metadata, or the documented exact legacy route registered on the configured
-   HTTPS HA origin. A hostname match alone is insufficient. Shared or unverified apps/callbacks are
+   HTTPS HA origin (including HA’s authenticated Cloud remote UI origin when no
+   external URL is configured). A hostname match alone is insufficient. Shared or unverified apps/callbacks are
    refused before disabling the old provider. Unknown grants require fresh consent;
    they are never guessed from what a previous integration requested.
 4. Confirm the handover. The flow imports native Application Credentials, records
