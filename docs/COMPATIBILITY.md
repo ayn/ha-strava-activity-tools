@@ -1,9 +1,6 @@
 # Compatibility boundary
 
-Strava Automation 0.7.0 owns its native HA OAuth session, webhook and activity
-client. It has no `ha_strava` runtime dependency. The legacy real-provider watcher
-and its opt-in contracts were retired when that dependency was removed; a skipped
-legacy contract is not a passing standalone test.
+Strava Automation owns its native HA OAuth session, webhook and activity client.
 
 The full suite exercises native HA config flows, signed OAuth callbacks, token
 rotation, webhook HTTP routing, subscriptions, services, automations, blueprints,

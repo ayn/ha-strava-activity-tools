@@ -1,30 +1,16 @@
 # Roadmap context
 
-Version 0.7.0 is independent **Strava Automation**. Native auth, webhook ingress,
-durable generic/workout mutations and a workout blueprint are implemented. The
-former companion/provider architecture in this original plan is historical;
-use the [current README](../README.md) and [issue tracker](https://github.com/ayn/ha-strava-automation/issues/5)
-for shipped behavior and remaining work. Existing issue numbers survive the
-repository rename. Planned title templates, continuous/double-session matching,
-metric rule inputs and optional structured-plan sources remain future features.
+Strava Automation manages its own authorization and webhook subscription. See
+the [README](../README.md) for shipped features and the
+[issue tracker](https://github.com/ayn/ha-strava-automation/issues/5) for planned
+work.
 
 ---
 
 ## Architecture and roadmap
 
-The existing ha_strava integration owns OAuth and the Strava webhook. This
-companion adds enrichment and native HA actions/blueprints, using that session
-rather than storing another token or creating another subscription.
-
 Portable transformations and the HTTP client are separate from HA recorder,
-configuration, event and persistence adapters. Generic Strava improvements are
-proposed separately: [activity events #349](https://github.com/craibo/ha_strava/pull/349),
-[deterministic retry test #351](https://github.com/craibo/ha_strava/pull/351),
-[legacy reauthorization #352](https://github.com/craibo/ha_strava/pull/352), and
-[account-scoped fetch/write #353](https://github.com/craibo/ha_strava/pull/353).
-These PRs are ready for review, not merged. The companion currently uses its own
-client with the provider’s existing OAuth session; #353 is not an installation
-prerequisite. Environmental enrichment stays here.
+configuration, event and persistence adapters.
 
 Current capabilities:
 
@@ -81,16 +67,14 @@ proof of API access or measured user demand.
 ## Implementation boundaries
 
 Use native HA config flows, actions, selectors, notifications and blueprints.
-Reuse the provider’s OAuth and webhook; preserve previews, ownership checks,
-manual edits and minimal bounded storage. Add red/green synthetic regressions
-for behavioral work and explicit opt-ins for new writes. Generic provider work
-belongs upstream where appropriate.
+Use HA's native OAuth session and webhook APIs. Preserve previews, ownership
+checks, manual edits and bounded storage. Add red/green synthetic regressions
+for behavioral work and explicit opt-ins for new writes.
 
 These priorities are project choices. The formal catalog prerequisites and
 upstream-release gates remain in [PUBLISHING.md](PUBLISHING.md). A catalog listing
 is not needed for custom-repository installation, and no acceptance date is promised.
 
-A custom IFTTT-style editor, independent OAuth store, recurring activity polling,
+A custom IFTTT-style editor, separate credential storage, recurring activity polling,
 AI activity-data analysis, route/history database, coaching platform, cross-service
 activity copying and undocumented privacy/map writes are outside this roadmap.
-A possible Core path for the provider remains separate from the companion.
