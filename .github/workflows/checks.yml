@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - custom_components/**
+      - '!custom_components/**/brand/**'
       - blueprints/**
       - examples/**
       - tests/**
@@ -15,6 +16,7 @@ on:
     branches-ignore: [main]
     paths:
       - custom_components/**
+      - '!custom_components/**/brand/**'
       - blueprints/**
       - examples/**
       - tests/**
