@@ -1,3 +1,23 @@
+# Standalone runtime check (0.7.2)
+
+One private HAOS installation running Core 2026.11.2 was switched from the old
+provider/companion to the standalone integration through native HA and Marketplace
+APIs. The existing app authorization was transferred without exporting credentials.
+The old refresh owner was disabled before handover, then removed after consumers
+moved. No direct `.storage` edits were used.
+
+Post-restart checks confirmed the new entry loaded in live mode, configured rules
+remained enabled, terminal receipt IDs/statuses survived, and an authenticated owned
+activity read succeeded. The external archive consumer reconnected under the new
+event namespace without resetting its completed queue or cutoff. History dashboard
+references and live Markdown rendering were checked, including the activity's own
+link. Screenshot rendering was unavailable; no browser visual check is claimed.
+
+No synthetic webhook was injected into live automations and no historical Strava
+mutation was performed for validation. A fresh post-cutover upload and a new browser
+consent flow remain separate live checks. This runtime smoke test does not replace
+the pinned framework suite or establish a multi-version support matrix.
+
 # Cloud-only migration patch 0.7.2
 
 A native network regression reproduces migration with no configured external URL
