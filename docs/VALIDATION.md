@@ -5,8 +5,8 @@ uninstall. An explicit admin/MCP action now retains validated terminal receipts
 across that removal. It requires an active matching native migration proof and
 preview mode, rejects nonterminal work and corrupt hashes, and performs no API
 reads/writes. Red/green regressions cover old-entry removal, reload, idempotency,
-account isolation and HA administrator permissions. The full suite passes 431 tests
-with 91.94% coverage.
+account isolation and HA administrator permissions. The full suite passes 437 tests
+with 91.98% coverage.
 
 # Standalone 0.7.0 validation
 

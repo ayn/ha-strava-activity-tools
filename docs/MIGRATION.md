@@ -23,7 +23,9 @@ store guard. A new installation does not need this step.
 2. Keep the selected `ha_strava` connection loaded. Add **Strava Automation** and
    choose **Migrate from ha_strava**, then select that connection.
 3. The preflight verifies a native HA OAuth session, authenticated athlete, grants,
-   app credentials and existing callback. Shared or unverified apps/callbacks are
+   app credentials and existing callback. Callback identity uses saved connection
+   metadata, or the documented exact legacy route registered on the configured
+   HTTPS HA origin. A hostname match alone is insufficient. Shared or unverified apps/callbacks are
    refused before disabling the old provider. Unknown grants require fresh consent;
    they are never guessed from what a previous integration requested.
 4. Confirm the handover. The flow imports native Application Credentials, records

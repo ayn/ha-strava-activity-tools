@@ -16,7 +16,9 @@ from homeassistant.components.application_credentials import (
 )
 from homeassistant.config_entries import ConfigEntryDisabler, ConfigEntryState
 from homeassistant.helpers.config_entry_oauth2_flow import OAuth2Session, async_get_implementations
+from homeassistant.helpers.network import NoURLAvailableError, get_url
 from homeassistant.helpers.storage import Store
+from yarl import URL
 
 from .auth import (
     AccountVerificationError,
@@ -47,6 +49,40 @@ class MigrationSnapshot:
 
 def migration_store(hass, source_entry_id):
     return Store(hass, 1, f"{DOMAIN}.migration.{source_entry_id}", private=True, atomic_writes=True)
+
+
+def _registered_legacy_callback(hass, value):
+    """Correlate the documented legacy route when no URL was persisted on its entry."""
+    try:
+        remote = URL(value)
+        origin = URL(
+            get_url(
+                hass,
+                allow_internal=False,
+                allow_cloud=False,
+                prefer_external=True,
+                require_ssl=True,
+            )
+        )
+    except NoURLAvailableError, ValueError, TypeError:
+        return False
+    if (
+        remote.scheme != "https"
+        or (remote.host, remote.port) != (origin.host, origin.port)
+        or remote.user is not None
+        or remote.password is not None
+        or remote.query_string
+        or remote.fragment
+        or remote.raw_path != "/api/strava/webhook"
+        or not getattr(hass, "http", None)
+    ):
+        return False
+    return any(
+        route.method == "POST"
+        and route.resource is not None
+        and route.resource.canonical == remote.raw_path
+        for route in hass.http.app.router.routes()
+    )
 
 
 async def async_prepare_migration(hass, source_entry_id):
@@ -142,7 +178,10 @@ async def async_prepare_migration(hass, source_entry_id):
                 not isinstance(item, dict)
                 or strava_id(item.get("id")) is None
                 or not isinstance(item.get("callback_url"), str)
-                or item["callback_url"].rstrip("/") not in callbacks
+                or (
+                    item["callback_url"].rstrip("/") not in callbacks
+                    and not _registered_legacy_callback(hass, item["callback_url"])
+                )
             ):
                 raise MigrationError("migration_subscription_unknown")
             subscription = {"id": strava_id(item["id"]), "callback_url": item["callback_url"]}
