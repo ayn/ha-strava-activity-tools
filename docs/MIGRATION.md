@@ -11,6 +11,12 @@ refresh owner.
 
 ## Reuse an existing app and authorization
 
+For an existing Activity Tools installation, Marketplace may require removing the
+old config entry before uninstalling/reinstalling its renamed repository. Preserve
+terminal receipts through [the advanced agent handover](AGENT_SETUP.md#marketplace-domain-rename)
+first. Do not delete an entry containing pending/unreviewed work or bypass the
+store guard. A new installation does not need this step.
+
 1. Take a current HA backup and save affected automation/dashboard configurations.
    Pause dependent automations without cancelling active writes; let existing work
    finish. Disable/unload the old Activity Tools companion if present.

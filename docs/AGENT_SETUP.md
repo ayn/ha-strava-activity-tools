@@ -60,3 +60,26 @@ Compare the imported receipt IDs/statuses before enabling writes. Keep all activ
 payloads and deployment notes private. Only remove old entries/files once remaining
 consumers and cleanup effects have been checked. Follow the native APIs; do not edit
 HA's internal storage to make an entry appear migrated.
+
+### Marketplace domain rename
+
+Marketplace 2026.11 blocks removing repository files while any old-domain config
+entry exists, including disabled entries. A normal domain rename therefore needs
+repository uninstall/reinstall. Do not bypass that guard or edit internal storage.
+
+When all old jobs are terminal, an advanced agent can retain their receipt metadata
+using List jobs and privately retain the configured operation parameters. Validate
+each original job ID against the canonical intent hash before removing anything.
+After the supported OAuth handover is active, `import_completed_jobs` in 0.7.1+
+accepts only full, validated done/skipped receipt records for the expected athlete,
+with a matching native migration proof and the target still in preview. It rejects
+pending/running/failed records and mismatched intent hashes; it never contacts
+Strava or enables writes. Records retain their original seven-day expiry.
+
+This is an explicit MCP/admin handover, not an automatic migration wizard. Save
+parameters/receipts only in private operational storage, never public source or
+logs. Recheck the final snapshot after pausing rules. If pending or unmatched work
+exists, finish or review it before removing the old entry. Preserve source settings,
+restore the shoe through the new account's native picker, and verify receipt
+counts/statuses before re-enabling rules. Private Store backups are a recovery
+path, not permission to edit .storage directly.
