@@ -75,6 +75,34 @@ def test_multiple_sets_match_in_order_with_recovery_laps():
     assert suggest_workout(run, [event("3 x 1k; 8 x 400m")], "UTC")["matched_reps"] == 11
 
 
+@pytest.mark.parametrize(
+    ("title", "description"),
+    [
+        ("2x mile + 4x400m", ""),
+        ("2x 1 mile + 4x400m", "2x 1 mile at threshold\n4x400m fast"),
+        ("2x mile + 4x400m", "Warm up\n2x mile at threshold\n4x400m fast\nCool down"),
+        ("4x400m", "2x mile at threshold\n4x400m fast"),
+    ],
+)
+def test_mile_shorthand_and_repeated_calendar_summary(title, description):
+    run = activity()
+    run["laps"] = [
+        {"distance": d, "moving_time": t}
+        for d, t in [(1609, 380), (100, 90)] * 2 + [(400, 85), (100, 90)] * 4
+    ]
+    result = suggest_workout(run, [event(title, description=description)], "UTC")
+    assert result["changes"] == {"workout_type": 3}
+    assert result["matched_reps"] == 6
+
+
+def test_distinct_repeated_sets_in_description_still_need_all_laps():
+    prescribed = event("4x400m", description="4x400m, then 4x400m off a longer recovery")
+    run = activity()
+    assert suggest_workout(run, [prescribed], "UTC")["matched_reps"] == 8
+    run["laps"] = run["laps"][:8]
+    assert suggest_workout(run, [prescribed], "UTC")["changes"] == {}
+
+
 @pytest.mark.parametrize("mutation", ["no_laps", "cancelled", "different_sport", "bad_time"])
 def test_missing_or_ineligible_evidence_abstains(mutation):
     run, prescribed = activity(), event()
