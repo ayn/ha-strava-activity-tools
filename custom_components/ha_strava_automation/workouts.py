@@ -11,8 +11,9 @@ from .core import METERS_PER_MILE, nonnegative, parse_time
 from .tracks import gps_track_pattern
 
 INTERVAL = re.compile(
-    r"(?<![\w.])(\d{1,2})\s*[x×]\s*(\d+(?:\.\d+)?)\s*"
-    r"(kilometers?|kilometres?|kms?|k|miles?|mi|meters?|metres?|m|minutes?|mins?|seconds?|secs?|s)\b",
+    r"(?<![\w.])(\d{1,2})\s*[x×]\s*(?:(\d+(?:\.\d+)?)\s*"
+    r"(kilometers?|kilometres?|kms?|k|miles?|mi|meters?|metres?|m|minutes?|mins?|seconds?|secs?|s)"
+    r"|(mile))\b",
     re.I,
 )
 
@@ -51,7 +52,8 @@ def interval_blocks(text: str) -> list[tuple[int, str, float]]:
         return []
     blocks = []
     for match in INTERVAL.finditer(text):
-        count, value, unit = int(match[1]), float(match[2]), match[3].lower()
+        count = int(match[1])
+        value, unit = (float(match[2]), match[3].lower()) if match[2] else (1.0, "mile")
         if not 2 <= count <= 50 or value <= 0:
             return []
         if unit.startswith(("min", "sec")) or unit == "s":
@@ -62,6 +64,23 @@ def interval_blocks(text: str) -> list[tuple[int, str, float]]:
             )
             blocks.append((count, "distance", value * factor))
     return blocks if len(blocks) <= 10 else []
+
+
+def event_blocks(event: dict) -> list[tuple[int, str, float]]:
+    """Count a summary repeated in the description only once."""
+    summary = str(event.get("summary") or "")
+    description = str(event.get("description") or "")
+    combined = interval_blocks(f"{summary}\n{description}")
+    if not combined:
+        return []
+    title, details = interval_blocks(summary), interval_blocks(description)
+    if title and details:
+        shorter, longer = sorted((title, details), key=len)
+        if any(
+            longer[i : i + len(shorter)] == shorter for i in range(len(longer) - len(shorter) + 1)
+        ):
+            return longer
+    return combined
 
 
 def lap_evidence(laps: list[dict], blocks: list[tuple[int, str, float]]) -> int:
@@ -132,8 +151,7 @@ def suggest_workout(activity: dict[str, Any], events: list[dict], fallback_timez
     for event in eligible:
         if re.search(r"(?:^|[:\s-])race\s*:", str(event.get("summary", "")), re.I):
             continue
-        text = str(event.get("summary") or "") + "\n" + str(event.get("description") or "")
-        blocks = interval_blocks(text)
+        blocks = event_blocks(event)
         if blocks and (count := lap_evidence(laps, blocks)):
             matches.append(count)
     if len(matches) > 1:
