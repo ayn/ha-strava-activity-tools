@@ -1,12 +1,14 @@
 """Actual HA webhook router with synthetic requests and a durable-accept boundary."""
 
+import json
 from unittest.mock import AsyncMock
 
 import pytest
 from homeassistant.components import webhook
 from homeassistant.setup import async_setup_component
+from homeassistant.util.aiohttp import MockRequest
 
-from custom_components.ha_strava_automation.webhook import WebhookReceiver
+from custom_components.ha_strava_automation.webhook import MAX_BODY, WebhookReceiver
 
 from .conftest import DOMAIN
 
@@ -84,6 +86,31 @@ async def test_create_is_durably_accepted_before_ack(receiver):
     result = await client.post(PATH, json=event())
     assert result.status == 200
     accept.assert_awaited_once_with("123")
+
+
+@pytest.mark.parametrize("padding,status", [(0, 200), (MAX_BODY, 413)])
+async def test_cloud_forwarded_create_uses_bounded_stream(hass, receiver, padding, status):
+    _, _, accept = receiver
+    request = MockRequest(
+        content=json.dumps(event(extra="x" * padding)).encode(),
+        method="POST",
+        mock_source="cloud",
+    )
+    result = await webhook.async_handle_webhook(hass, PATH.rsplit("/", 1)[1], request)
+    assert result.status == status
+    if status == 200:
+        accept.assert_awaited_once_with("123")
+    else:
+        accept.assert_not_called()
+
+
+async def test_http_chunked_oversized_body_is_rejected_without_content_length(receiver):
+    client, _, accept = receiver
+    result = await client.post(
+        PATH, data=json.dumps(event(extra="x" * MAX_BODY)).encode(), chunked=True
+    )
+    assert result.status == 413
+    accept.assert_not_called()
 
 
 @pytest.mark.parametrize("payload", [[], None, True, "activity", {"owner_id": 42}])

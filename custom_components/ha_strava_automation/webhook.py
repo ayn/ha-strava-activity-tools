@@ -55,10 +55,10 @@ class WebhookReceiver:
             ):
                 return web.json_response({}, status=400)
             return web.json_response({"hub.challenge": challenge})
-        if request.content_length is not None and request.content_length > MAX_BODY:
-            return web.json_response({}, status=413)
+        # HA Cloud forwards through MockRequest, whose stream only provides read().
+        stream = request.content
         raw = bytearray()
-        async for chunk in request.content.iter_chunked(4096):
+        while chunk := await stream.read(min(4096, MAX_BODY + 1 - len(raw))):
             raw.extend(chunk)
             if len(raw) > MAX_BODY:
                 return web.json_response({}, status=413)
