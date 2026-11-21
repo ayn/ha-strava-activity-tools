@@ -9,10 +9,9 @@ connection failures. No activity polling or separate server is needed.
 [![Open in HACS or Marketplace](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=ayn&repository=ha-strava-automation&category=integration)
 [![Set up Strava Automation](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=ha_strava_automation)
 
-This repository was formerly **Strava Activity Tools**. Version 0.7.0 owns its
-Strava authorization and webhook; it does not require `ha_strava` or its pending
-PRs. Installation currently uses a **custom repository** in Marketplace/HACS,
-not the default catalog. Read the migration guide before upgrading an old setup.
+This repository was formerly **Strava Activity Tools**. Strava Automation manages
+its own Strava authorization and webhook. Install it as a **custom repository**
+in Marketplace or HACS.
 
 ## Webhook access required
 
@@ -83,9 +82,8 @@ share its remote subscription and quota budget.
 
 To keep another Strava integration installed alongside this one, give each a
 **different API app/client ID**: Strava permits one webhook subscription per app.
-To replace `ha_strava` using the same app, use the explicit supported
-[Migrate from ha_strava flow](docs/MIGRATION.md). Existing provider sensors and
-custom automations are not silently rewritten.
+To move an existing connection and reuse its API app, see the
+[connection migration guide](docs/MIGRATION.md).
 
 ## Native actions and events
 
@@ -151,6 +149,6 @@ uv pip install --python .venv/bin/python -r requirements-dev.txt
 
 The reproducible harness currently pins HA 2026.10.4. Current-version deployment
 checks are separate from that test baseline; see [validation](docs/VALIDATION.md).
-Auth and its tests were written from official framework/protocol references,
-without consulting `ha_strava` auth code/tests. See [provenance](docs/PROVENANCE.md).
+Auth and its tests were written from official framework and protocol references.
+See [provenance](docs/PROVENANCE.md).
 Existing competitor/provider API policies apply separately from this MIT license.

@@ -110,12 +110,8 @@ of a broad hosted rule system and a useful API compatibility reference.
 Neither primary feature description establishes a drop-in HA implementation of
 our sensor-history enrichment and calendar/GPS matching.
 
-[Strava Connect](https://github.com/CraigBell/strava_connect) is especially relevant:
-its README documents a dynamic shoe catalog, Stryd mapping and
-`ha_strava.set_activity_gear`. It keeps the `ha_strava` domain, so it replaces rather
-than coexists with that provider. Its MIT license permits reuse with attribution,
-but no implementation has been copied here. Compare concrete code/tests and
-maintenance before proposing a provider migration or duplicate upstream changes.
+[Strava Connect](https://github.com/CraigBell/strava_connect) documents a dynamic
+shoe catalog, Stryd mapping and a gear assignment action.
 
 [Stravalib](https://github.com/stravalib/stravalib) provides general Python API
 access and mutations. Adopting it would need to preserve HA's existing async
