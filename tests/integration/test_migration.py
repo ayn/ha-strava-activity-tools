@@ -294,3 +294,34 @@ async def test_documented_callback_requires_configured_origin_and_registered_exa
         with pytest.raises(MigrationError, match="migration_subscription_unknown"):
             await async_prepare_migration(hass, source.entry_id)
     assert source.disabled_by is None
+
+
+async def test_cloud_only_ha_origin_can_verify_registered_legacy_route(
+    hass, source, aioclient_mock
+):
+    from aiohttp import web
+    from homeassistant.components.http import HomeAssistantView
+
+    class SyntheticCloudLegacyWebhook(HomeAssistantView):
+        url = "/api/strava/webhook"
+        name = "api:synthetic_cloud_legacy_webhook"
+        requires_auth = False
+
+        async def post(self, request):
+            return web.Response()
+
+    hass.http.register_view(SyntheticCloudLegacyWebhook)
+    hass.config.external_url = None
+    hass.config.components.add("cloud")
+    aioclient_mock.clear_requests()
+    aioclient_mock.get("https://www.strava.com/api/v3/athlete", json={"id": 42})
+    aioclient_mock.get(
+        "https://www.strava.com/api/v3/push_subscriptions",
+        json=[{"id": 12, "callback_url": "https://cloud.example.test/api/strava/webhook"}],
+    )
+    with patch(
+        "homeassistant.helpers.network._get_cloud_url", return_value="https://cloud.example.test"
+    ):
+        snapshot = await async_prepare_migration(hass, source.entry_id)
+    assert snapshot.data["migration_remote_subscription"]["id"] == "12"
+    assert source.disabled_by is None

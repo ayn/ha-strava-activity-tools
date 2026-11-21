@@ -59,7 +59,7 @@ def _registered_legacy_callback(hass, value):
             get_url(
                 hass,
                 allow_internal=False,
-                allow_cloud=False,
+                allow_cloud=True,
                 prefer_external=True,
                 require_ssl=True,
             )
