@@ -20,8 +20,9 @@ Strava must be able to reach the integration's webhook over **public HTTPS**.
 Strava sends a GET request to verify the webhook during setup and POST requests
 to deliver activity events. Pick one way to make that endpoint reachable:
 
-- **Home Assistant Cloud (Nabu Casa).** Sign in to HA Cloud so the integration
-  can use a cloud webhook. You do not need to forward a port.
+- **Home Assistant Link (formerly Home Assistant Cloud).** Sign in to your
+  Nabu Casa account so the integration can use a cloud webhook without port
+  forwarding.
 - **Public tunnel or reverse proxy.** Use a public HTTPS endpoint such as
   Tailscale Funnel or Cloudflare Tunnel and configure its URL as Home Assistant's
   external URL.
